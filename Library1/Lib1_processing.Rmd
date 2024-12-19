@@ -1,0 +1,780 @@
+---
+title: "ScRNAseq analysis [Library 1]{style='color:red ; font-weight:500'}"
+subtitle: "[Processing]{style='color:yellow ; font-weight:600 ; background-color:black ; font-size:120%'}"
+author: "juba"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    number_sections: no
+    theme: flatly
+    highlight: tango
+    toc: yes
+    toc_depth: 6
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    df_print: paged 
+
+params:
+  c3m: TRUE
+---
+
+```{r Setting, echo=FALSE, message=FALSE, warning=FALSE}
+
+##########################
+#####   Packages    ######
+##########################
+
+packages <- installed.packages()[,"Package"]
+cran_packages <- c("knitr", "Seurat", "dplyr", "tidyr", "ggplot2", "tibble", 
+                   "writexl", "readxl", "msigdbr","clustree","circlize","cowplot") 
+bioc_packages <- c("clusterProfiler", "org.Hs.eg.db", "AnnotationDbi", 
+                   "fgsea", "enrichplot","ComplexHeatmap")
+
+## Installing cran packages : 
+for(package in cran_packages[!(cran_packages %in% packages)]) {
+  install.packages(package)
+}
+
+## Install bioconductor packages : 
+for(package in bioc_packages[!(bioc_packages %in% packages)]) {
+  BiocManager::install(package)
+}
+
+## Loading packages
+library(knitr)
+library(Seurat)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(tibble)
+library(writexl)
+library(clustree)
+library(circlize)
+library(ComplexHeatmap)
+library(stringr)
+library(cowplot)
+library(devtools)
+
+
+
+##################################
+#######   Other settings  ########
+##################################
+
+## Palettes :
+MyPalette <- c("#9933aa","#ffdd22","#aa4400","#ff0000","#337722","#00ff66","#005566","#002277",
+               "#441144","#aa0077","#00bbff","#003333","#4422cc","#116611","#330077","#111111",
+               "#667700","#ddaa00","#33ffff","#ff22ff","#ffff33","#00ff00","#0000ff","#444444")
+
+## Directories :
+if(params$c3m == T){
+  out_object_dir <- "~/Bureau/Juba/Projects/SingleCell/Library1/Out_objects/"
+  out_figure_dir <- "~/Bureau/Juba/Projects/SingleCell/Library1/Out_figures/"
+  out_seurat_dir <- "~/Bureau/Juba/Projects/SingleCell/Library1/SeuratObjects/"
+} else {
+  out_object_dir <- "/Projects/T-ALL scRNAseq/Library1/OutObjects/"
+  out_figure_dir <- "/Projects/T-ALL scRNAseq/Library1/OutFigures/"
+  out_seurat_dir <- "/Projects/T-ALL scRNAseq/Library1/SeuratObjects/"
+}
+
+
+## Set chunk options
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = FALSE)
+```
+
+```{r}
+Assign_colors <- function(object, pal){
+  n = length(unique(object))
+  
+  if(is.numeric(object)){
+    message("This function can't handle numeric argument !!!")
+    stop("Please provide a character vector as an object")
+  }
+  
+  if(length(pal) < n){
+    warning("Not enough colours within the selected palette to match your variables !!")
+    warning("Generate colours from the implemented list within base R")
+    pal <- sample(colours(), size = n)
+  }
+  
+  res = sample(pal, size = n) %>% setNames(unique(object))
+  
+  return(res)
+}
+
+My_ggplot_theme <- function(){
+  theme_linedraw()+
+    theme(panel.background = element_rect(fill = "#fff", colour = "#aaa"),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        axis.title.x = element_text(size = 14, margin = margin(t=0.15, unit = "in")),
+        axis.title.y = element_text(size = 14, margin = margin(r=0.15, unit = "in")),
+        legend.key = element_blank(),
+        legend.background = element_blank(),
+        legend.title = element_text(size = 13, face = "bold", colour = "darkred", 
+                                    margin = margin(b=0.15, unit = "in")),
+        legend.text = element_text(size = 11),
+        legend.box.margin = margin(l= 0.05, unit = "in"),
+        plot.title = element_text(size = 15, face = "bold", colour = "darkred"))
+}
+```
+
+
+#   Import the data   {.tabset .tabset-pills}
+
+```{r}
+if(params$c3m == T){
+  SeuratObj <- readRDS("~/Bureau/Juba/Projects/SingleCell/Library1/SeuratObjects/Seurat2.rds")
+} else {
+  SeuratObj <- readRDS("/Projects/T-ALL scRNAseq/Library1/SeuratObjects/ Seurat2.rds")
+}
+
+SeuratObj
+```
+
+```{r ,echo=FALSE}
+SeuratObj@meta.data <- SeuratObj@meta.data %>% 
+  mutate(hash.ID = case_when(
+    hash.ID == "M104" ~ "Diagnosis",
+    hash.ID == "M127" ~ "Relapse"
+  ))
+
+SeuratObj@meta.data <- SeuratObj@meta.data %>% 
+  mutate(
+    Clust_res0.1 = as.factor(paste0(SCT_snn_res.0.1, substr(SeuratObj$hash.ID,1,1))),
+    Clust_res0.2 = as.factor(paste0(SCT_snn_res.0.2, substr(SeuratObj$hash.ID,1,1))),
+    Clust_res0.3 = as.factor(paste0(SCT_snn_res.0.3, substr(SeuratObj$hash.ID,1,1))),
+    Clust_res0.4 = as.factor(paste0(SCT_snn_res.0.4, substr(SeuratObj$hash.ID,1,1))),
+    Clust_res0.5 = as.factor(paste0(SCT_snn_res.0.5, substr(SeuratObj$hash.ID,1,1))),
+    Clust_res0.6 = as.factor(paste0(SCT_snn_res.0.6, substr(SeuratObj$hash.ID,1,1))),
+    Clust_res0.7 = as.factor(paste0(SCT_snn_res.0.7, substr(SeuratObj$hash.ID,1,1))),
+    Clust_res0.8 = as.factor(paste0(SCT_snn_res.0.8, substr(SeuratObj$hash.ID,1,1))),
+    Clust_res0.9 = as.factor(paste0(SCT_snn_res.0.9, substr(SeuratObj$hash.ID,1,1))),
+    Clust_res1 = as.factor(paste0(SCT_snn_res.1, substr(SeuratObj$hash.ID,1,1)))
+  )
+```
+
+
+[Here're some representation]{style='color:darkred ; font-weight:600 ; font-size:120%'}
+
+##    General conditions
+
+```{r}
+DimPlot(SeuratObj, cols = MyPalette, group.by = "hash.ID", label = F, label.box = F, repel = F)
+```
+
+
+##    Clusteres at res0.5
+
+```{r}
+DimPlot(SeuratObj, cols = MyPalette, group.by = "Clust_res0.5", 
+        label = T, label.box = T, repel = T, label.color = "white", label.size = 4)
+```
+
+##    Clonotypes distributions
+
+```{r}
+DimPlot(SeuratObj, group.by = "clone_id")+
+  theme(legend.position = "none")
+```
+
+
+##    Cell cycle distribution
+
+```{r}
+DimPlot(SeuratObj, cols = MyPalette, group.by = "Phase", 
+        label = T, label.box = T, repel = T, label.color = "white", label.size = 4)
+```
+
+
+
+
+#   Cells inspection    {.tabset .tabset-pills}
+
+[I'll inspect the expression of some markers to determine the cell types]{style='color:darkred ; font-weight:600 ; font-size:120%'}
+
+This will help us determine any cluster that may not be of interest !
+
+[We'll realize the inspection using the expression plot and violin plots with the 0.5 resolution below]{style='color:purple ; font-weight:600 ; font-size:100%'}
+
+```{r}
+DimPlot(SeuratObj, cols = MyPalette, group.by = "SCT_snn_res.0.5", 
+        label = T, label.box = T, repel = T, label.color = "white", label.size = 4)
+```
+
+
+##    T lymphocytes
+
+```{r ,fig.width=10, fig.height=7}
+try(VlnPlot(SeuratObj, 
+            features = c("CD3D","CD4","CD8A","IL7R"), 
+            ncol = 2, 
+            group.by = "SCT_snn_res.0.5",
+            split.by = "hash.ID",
+            cols = MyPalette))+
+  theme(legend.position = "right",
+        legend.justification = "top")
+
+try(FeaturePlot(SeuratObj, features = c("CD3D","CD4","CD8A","IL7R"), cols = c("#EEEEEE","#221166")))
+```
+
+
+##    Other cell types
+
+Basically here, we're looking for
+
+-   Monocytes & macrophages
+-   NK cells
+-   B Lymphocytes
+-   Myeloid cells & some others
+
+```{r ,fig.width=12, fig.height=9}
+try(VlnPlot(SeuratObj, 
+            features = c("CD14","LYZ","NKG7","GNLY","MS4A1","MPO","EPCAM","CD34"), 
+            ncol = 3, 
+            group.by = "SCT_snn_res.0.5",
+            split.by = "hash.ID",
+            cols = MyPalette))+
+  theme(legend.position = "right",
+        legend.justification = "top")
+```
+
+As for the feature plots :
+
+```{r ,fig.width=12, fig.height=9}
+try(FeaturePlot(SeuratObj, 
+                features = c("CD14","LYZ","NKG7","GNLY","MS4A1","MPO","EPCAM","CD34"),
+                ncol = 3,
+                cols = c("#EEEEEE","#221166")))
+```
+
+
+
+
+
+
+#   Clonotypes inspection   {.tabset .tabset-pills}
+
+[Now we'll inspect the distribution of the clonotypes at the general condition (diag/rel) and among our clusters]{style='color:darkred ; font-size:120%'}
+
+Before that, let's take a look at their distribution regardless of any clustering
+
+```{r, rows.print=8}
+SeuratObj@meta.data %>% 
+  dplyr::count(clone_id) %>% 
+  dplyr::arrange(desc(n)) %>% 
+  head(12)
+```
+
+```{r}
+SeuratObj@meta.data %>% 
+  ggplot()+
+  geom_point(aes(x= umap_1,
+                 y= umap_2,
+                 colour= clone_id),
+             size = 0.7,
+             alpha= 0.8)+
+  My_ggplot_theme()+
+  theme(legend.position = "none")
+```
+
+
+And by grouping all the unique clonotypes !
+
+```{r ,rows.print=8}
+unique_cl <- SeuratObj@meta.data %>% 
+  dplyr::count(clone_id) %>% 
+  dplyr::filter(n == 1) %>% 
+  dplyr::pull(clone_id)
+
+SeuratObj@meta.data <- SeuratObj@meta.data %>% 
+  dplyr::mutate(clone_id = case_when(clone_id %in% unique_cl ~ "unique",
+                                     TRUE ~ clone_id))
+
+SeuratObj@meta.data %>% 
+  dplyr::count(clone_id) %>% 
+  dplyr::arrange(desc(n)) %>% 
+  head(10)
+```
+
+```{r}
+SeuratObj@meta.data %>% 
+  ggplot()+
+  geom_point(aes(x= umap_1,
+                 y= umap_2,
+                 colour= clone_id),
+             size = 0.7,
+             alpha= 0.8)+
+  My_ggplot_theme()+
+  scale_colour_manual(values = MyPalette)+
+  guides(colour = guide_legend(override.aes = list(size = 2.5)))
+```
+
+
+
+[Now let's see the distribution among our conditions]{style='color:darkred ; font-size:120%'}
+
+## General conditions
+
+```{r}
+DimPlot(SeuratObj, cols = MyPalette, group.by = c("hash.ID"), 
+        label = T, label.box = T, repel = T, label.color = "white", label.size = 4)
+```
+
+```{r ,rows.print=6}
+SeuratObj@meta.data %>% 
+  group_by(clone_id, hash.ID) %>% 
+  summarise(count = n()) %>% 
+  arrange(clone_id) %>%
+  head(15)
+```
+
+```{r}
+SeuratObj@meta.data %>% 
+  group_by(clone_id, hash.ID) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  head(15) %>% 
+  ggplot()+
+  geom_bar(aes(x= hash.ID,
+               y= count,
+               fill= clone_id),
+           stat = "identity",
+           width = 0.9,
+           position = "stack")+
+  scale_fill_manual(values = MyPalette)+
+  labs(title = "Distribution of the top clonotypes",
+       x = "",
+       y = "Count")+
+  theme_bw()+
+  theme(legend.title = element_text(size = 12, face = "bold", colour = "darkred"),
+        legend.justification = "top",
+        legend.text = element_text(colour = "navy"),
+        axis.title = element_text(hjust = 0, size = 12, color = "darkred", face = "bold"),
+        axis.text = element_text(size = 11))
+```
+
+
+
+##    Clusters
+
+```{r}
+DimPlot(SeuratObj, cols = MyPalette, group.by = c("Clust_res0.5"), 
+        label = T, label.box = T, repel = T, label.color = "white", label.size = 4)
+```
+
+```{r ,rows.print=10}
+SeuratObj@meta.data %>% 
+  group_by(clone_id, Clust_res0.5) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) -> df ; df
+```
+
+```{r ,fig.width=10}
+df %>% 
+  head(30) %>% 
+  ggplot()+
+  geom_bar(aes(x= Clust_res0.5,
+               y= count,
+               fill= clone_id),
+           stat = "identity",
+           width = 0.7,
+           position = "stack")+
+  scale_fill_manual(values = MyPalette)+
+  scale_y_continuous(breaks = c(50,500,1000,1500))+
+  labs(title = "Distribution of the top clonotypes",
+       x = "",
+       y = "Count")+
+  theme_bw()+
+  theme(legend.title = element_text(size = 12, face = "bold", colour = "darkred"),
+        legend.justification = "top",
+        legend.text = element_text(colour = "navy"),
+        axis.title = element_text(hjust = 0, size = 12, color = "darkred", face = "bold"),
+        axis.text.x = element_text(size = 11, angle = 50),
+        axis.text.y = element_text(size = 11),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_line(colour = "darkred", linetype = "dashed"))
+
+df %>% 
+  head(30) %>% 
+  ggplot()+
+  geom_bar(aes(x= Clust_res0.5,
+               y= count,
+               fill= clone_id),
+           stat = "identity",
+           width = 0.7,
+           position = "fill")+
+  scale_fill_manual(values = MyPalette)+
+  labs(title = "Distribution of the top clonotypes",
+       x = "",
+       y = "Proportion")+
+  theme_bw()+
+  theme(legend.title = element_text(size = 12, face = "bold", colour = "darkred"),
+        legend.justification = "top",
+        legend.text = element_text(colour = "navy"),
+        axis.title = element_text(hjust = 0, size = 12, color = "darkred", face = "bold"),
+        axis.text.x = element_text(size = 11, angle = 50),
+        axis.text.y = element_text(size = 11))
+```
+
+
+
+#   Filtering
+
+[Now let's filter unwanted cells]{style='color:darkred ; font-size:120%'}
+
+Based on the observations from the cells and clonotype analysis :
+
+-   __Cluster4 (4D/4R)__ : most likely healthy cells
+-   __Cluster6 (6D/6R)__ : different cell type
+-   also remove __unique clonotypes__
+-   __Cluster8__ : not enough cells [(To ensure an analysis with enough accuracy, the clusters must have a minimum of approximately 30 cells)]{style='font-size:90% ; font-style:italic ; color:cadetblue'}
+
+```{r}
+cells_rm <- WhichCells(SeuratObj, expression = umap_1 > 5 & umap_2 < 1 | umap_1 < -8 | clone_id == "unique")
+SeuratObj_filt <- subset(SeuratObj, cells = setdiff(Cells(SeuratObj),cells_rm))
+```
+
+```{r ,fig.width=12}
+DimPlot(SeuratObj_filt, group.by = c("hash.ID","Clust_res0.5"), cols = MyPalette,
+        label = T, label.box = T, repel = T, label.color = "white", label.size = 5)
+```
+
+[We'll personalize the clusters annotation according to the cell conditions with each cluster]{style='color:navy ; font-size:120% ; font-weight:600'} 
+
+We can see that the cluster 7D is at diagnosis but from the clonotypes inspection, we can see that it has a relapse clonotype
+
+This cluster will be called and intermediate cluster (IC) for the rest of the analysis
+
+```{r}
+SeuratObj_filt@meta.data <- SeuratObj_filt@meta.data %>% 
+  mutate(MyClusters = case_when(Clust_res0.5 %in% c("1D","3D","2D","5D") ~ "Diag",
+                                Clust_res0.5 == "1R" ~ "Rel_in_Diag",
+                                Clust_res0.5 == "0R" ~ "Rel",
+                                Clust_res0.5 == "0D" ~ "Diag_in_Rel",
+                                Clust_res0.5 == "7D" ~ "IC"))
+
+DimPlot(SeuratObj_filt, cols = MyPalette, group.by = c("MyClusters"), 
+        label = T, label.box = T, repel = T, label.color = "white", label.size = 4)
+```
+
+
+And now, let's inspect the distribution of the clonotypes again
+
+```{r ,rows.print=8}
+SeuratObj_filt@meta.data %>% 
+  group_by(clone_id, MyClusters) %>% 
+  summarise(count = n()) %>% 
+  arrange(MyClusters) -> df ; df
+```
+
+Next, we'll do a final filtering removing all small groups with not enough cells like __Rel_in_Diag__ or __Diag_in_Rel__ for example
+
+```{r}
+cells_rm <- WhichCells(SeuratObj_filt, expression = umap_1 > 1 & MyClusters != "Rel" | umap_1 < 0 & MyClusters == "Rel_in_Diag")
+SeuratObj_filt <- subset(SeuratObj_filt, cells = setdiff(Cells(SeuratObj_filt),cells_rm))
+```
+
+And finally here's the summary of our top clonotypes remaining !
+
+```{r ,rows.print=6}
+SeuratObj_filt@meta.data %>% 
+  group_by(clone_id, MyClusters) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) -> df ; df
+```
+
+As we can see __clonotype4 & 2__ are still insignificant in this library
+
+```{r}
+df %>% 
+  ggplot()+
+  geom_bar(aes(x= MyClusters,
+               y= count,
+               fill= clone_id),
+           stat = "identity",
+           width = 0.7,
+           position = "stack")+
+  scale_fill_manual(values = MyPalette)+
+  labs(title = "Distribution of the top clonotypes",
+       x = "",
+       y = "Count")+
+  theme_bw()+
+  theme(legend.title = element_text(size = 12, face = "bold", colour = "darkred"),
+        legend.justification = "top",
+        legend.text = element_text(colour = "navy"),
+        axis.title = element_text(hjust = 0, size = 12, color = "darkred", face = "bold"),
+        axis.text.x = element_text(size = 11, angle = 0),
+        axis.text.y = element_text(size = 11),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_line(colour = "darkred", linetype = "dashed"))
+  
+```
+
+```{r}
+saveRDS(SeuratObj_filt, file = paste0(out_seurat_dir,"Seurat3.rds"))
+```
+
+```{r}
+SeuratObj_filt@meta.data %>% 
+  mutate(TopClones = case_when(
+    is.na(clone_id) ~ "Missing",
+    TRUE ~ clone_id
+  )) -> SeuratObj_filt@meta.data
+```
+
+
+#   TCR inspections   {.tabset .tabset-pills}
+
+[Now, let's inspect the VDJ expression :]
+
+-   Among our conditions (Diagnosis, Relapse, Intermediat Cluster)
+-   Among the clonotypes
+
+
+##    Among the conditions
+
+```{r ,fig.width=8}
+DimPlot(SeuratObj_filt,
+        group.by = "v_call",
+        split.by = "MyClusters",
+        cols = MyPalette)
+```
+
+Below is the summary of the remaining VDJ (V)
+
+```{r ,rows.print=10}
+SeuratObj_filt@meta.data %>% 
+  dplyr::group_by(MyClusters, v_call) %>% 
+  dplyr::summarise(count = n()) %>% 
+  dplyr::arrange(desc(count)) -> df ; df
+```
+
+```{r}
+df %>% 
+  ggplot()+
+  geom_bar(aes(x= MyClusters,
+               y= count,
+               fill= v_call),
+           stat = "identity",
+           width = 0.7,
+           position = "stack")+
+  scale_fill_manual(values = MyPalette)+
+  labs(title = "VDJ distribution",
+       x = "",
+       y = "Count")+
+  theme_bw()+
+  theme(legend.title = element_text(size = 12, face = "bold", colour = "darkred"),
+        legend.justification = "top",
+        legend.text = element_text(colour = "navy"),
+        axis.title = element_text(hjust = 0, size = 12, color = "darkred", face = "bold"),
+        axis.text.x = element_text(size = 11, angle = 0),
+        axis.text.y = element_text(size = 11),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_line(colour = "darkred", linetype = "dashed"))
+```
+
+
+##    Among the clonotypes
+
+```{r ,fig.width=8}
+DimPlot(SeuratObj_filt,
+        group.by = "v_call",
+        split.by = "TopClones",
+        cols = MyPalette)
+```
+
+```{r ,rows.print=6}
+SeuratObj_filt@meta.data %>% 
+  dplyr::group_by(TopClones, v_call) %>% 
+  dplyr::summarise(count = n()) %>% 
+  dplyr::arrange(desc(count)) -> df ; df
+```
+
+```{r}
+df %>% 
+  ggplot()+
+  geom_bar(aes(x= TopClones,
+               y= count,
+               fill= v_call),
+           stat = "identity",
+           width = 0.7,
+           position = "stack")+
+  scale_fill_manual(values = MyPalette)+
+  labs(title = "VDJ distribution",
+       x = "",
+       y = "Count")+
+  theme_bw()+
+  theme(legend.title = element_text(size = 12, face = "bold", colour = "darkred"),
+        legend.justification = "top",
+        legend.text = element_text(colour = "navy"),
+        axis.title = element_text(hjust = 0, size = 12, color = "darkred", face = "bold"),
+        axis.text.x = element_text(size = 11, angle = 0),
+        axis.text.y = element_text(size = 11),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_line(colour = "darkred", linetype = "dashed"))
+```
+
+```{r}
+SeuratObj_filt@meta.data %>% 
+  mutate(TopFeatures = case_when(
+    v_call == "TRBV5-4" ~ "TRBV5-4",
+    is.na(v_call) ~ "Missing",
+    TRUE ~ "Rest"
+  )) -> SeuratObj_filt@meta.data
+```
+
+```{r}
+SeuratObj_filt@meta.data$TopClones_Condition <- str_c(
+  paste0(str_split_i(SeuratObj_filt$TopClones,"onotype",1),
+         str_split_i(SeuratObj_filt$TopClones,"onotype",2)), 
+  substr(SeuratObj_filt$hash.ID,1,1),
+  sep = "_"
+)
+
+SeuratObj_filt@meta.data$Clusters_TopClones <- str_c(
+  SeuratObj_filt$MyClusters,
+  paste0(str_split_i(SeuratObj_filt$TopClones,"onotype",1),
+         str_split_i(SeuratObj_filt$TopClones,"onotype",2)),
+  sep = "_"
+)
+
+SeuratObj_filt@meta.data$Clone_TCR_Clust <- sub(pattern = "MissingNA_Missing",
+                                                replacement = "Missing",
+                                                x = str_c(SeuratObj_filt$Clusters_TopClones,
+                                                          SeuratObj_filt$TopFeatures,
+                                                          sep = "_"))
+
+
+```
+
+#   Expression plots
+
+Now let's inspect the expression of some features including the vdj (__TRBV5-4__)
+
+```{r}
+FeaturePlot(SeuratObj_filt,
+            features = "TRBV5-4")+
+  scale_colour_gradientn(colours = c("white","lightgray","cadetblue","darkred"),
+                         values = c(0,0.2,0.6,1),
+                         limits = c(0,3))
+```
+
+
+```{r ,fig.width=8}
+FeaturePlot(SeuratObj_filt, features = c("MYC","NOTCH1"), blend = T, cols = c("lightgray","red","purple"))
+```
+
+
+```{r}
+saveRDS(SeuratObj_filt, file = paste0(out_seurat_dir,"Seurat4.rds"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
