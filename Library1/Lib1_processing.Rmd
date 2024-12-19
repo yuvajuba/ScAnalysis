@@ -26,8 +26,8 @@ params:
 ##########################
 
 packages <- installed.packages()[,"Package"]
-cran_packages <- c("knitr", "Seurat", "dplyr", "tidyr", "ggplot2", "tibble", 
-                   "writexl", "readxl", "msigdbr","clustree","circlize","cowplot") 
+cran_packages <- c("knitr", "Seurat", "dplyr", "ggplot2", "tibble", 
+                   "writexl","clustree","cowplot") 
 bioc_packages <- c("clusterProfiler", "org.Hs.eg.db", "AnnotationDbi", 
                    "fgsea", "enrichplot","ComplexHeatmap")
 
@@ -45,13 +45,10 @@ for(package in bioc_packages[!(bioc_packages %in% packages)]) {
 library(knitr)
 library(Seurat)
 library(dplyr)
-library(tidyr)
 library(ggplot2)
 library(tibble)
 library(writexl)
 library(clustree)
-library(circlize)
-library(ComplexHeatmap)
 library(stringr)
 library(cowplot)
 library(devtools)
@@ -69,9 +66,9 @@ MyPalette <- c("#9933aa","#ffdd22","#aa4400","#ff0000","#337722","#00ff66","#005
 
 ## Directories :
 if(params$c3m == T){
-  out_object_dir <- "~/Bureau/Juba/Projects/SingleCell/Library1/Out_objects/"
-  out_figure_dir <- "~/Bureau/Juba/Projects/SingleCell/Library1/Out_figures/"
-  out_seurat_dir <- "~/Bureau/Juba/Projects/SingleCell/Library1/SeuratObjects/"
+  out_object_dir <- "~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/"
+  out_figure_dir <- "~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_figures/"
+  out_seurat_dir <- "~/Bureau/Projects/SingleCell/ScAnalysis/Library1/SeuratObjects/"
 } else {
   out_object_dir <- "/Projects/T-ALL scRNAseq/Library1/OutObjects/"
   out_figure_dir <- "/Projects/T-ALL scRNAseq/Library1/OutFigures/"
@@ -125,7 +122,7 @@ My_ggplot_theme <- function(){
 
 ```{r}
 if(params$c3m == T){
-  SeuratObj <- readRDS("~/Bureau/Juba/Projects/SingleCell/Library1/SeuratObjects/Seurat2.rds")
+  SeuratObj <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/SeuratObjects/Seurat2.rds")
 } else {
   SeuratObj <- readRDS("/Projects/T-ALL scRNAseq/Library1/SeuratObjects/ Seurat2.rds")
 }
@@ -143,15 +140,11 @@ SeuratObj@meta.data <- SeuratObj@meta.data %>%
 SeuratObj@meta.data <- SeuratObj@meta.data %>% 
   mutate(
     Clust_res0.1 = as.factor(paste0(SCT_snn_res.0.1, substr(SeuratObj$hash.ID,1,1))),
-    Clust_res0.2 = as.factor(paste0(SCT_snn_res.0.2, substr(SeuratObj$hash.ID,1,1))),
     Clust_res0.3 = as.factor(paste0(SCT_snn_res.0.3, substr(SeuratObj$hash.ID,1,1))),
-    Clust_res0.4 = as.factor(paste0(SCT_snn_res.0.4, substr(SeuratObj$hash.ID,1,1))),
     Clust_res0.5 = as.factor(paste0(SCT_snn_res.0.5, substr(SeuratObj$hash.ID,1,1))),
-    Clust_res0.6 = as.factor(paste0(SCT_snn_res.0.6, substr(SeuratObj$hash.ID,1,1))),
     Clust_res0.7 = as.factor(paste0(SCT_snn_res.0.7, substr(SeuratObj$hash.ID,1,1))),
-    Clust_res0.8 = as.factor(paste0(SCT_snn_res.0.8, substr(SeuratObj$hash.ID,1,1))),
     Clust_res0.9 = as.factor(paste0(SCT_snn_res.0.9, substr(SeuratObj$hash.ID,1,1))),
-    Clust_res1 = as.factor(paste0(SCT_snn_res.1, substr(SeuratObj$hash.ID,1,1)))
+    Clust_res1.1 = as.factor(paste0(SCT_snn_res.1.1, substr(SeuratObj$hash.ID,1,1)))
   )
 ```
 
@@ -452,6 +445,7 @@ This cluster will be called and intermediate cluster (IC) for the rest of the an
 SeuratObj_filt@meta.data <- SeuratObj_filt@meta.data %>% 
   mutate(MyClusters = case_when(Clust_res0.5 %in% c("1D","3D","2D","5D") ~ "Diag",
                                 Clust_res0.5 == "1R" ~ "Rel_in_Diag",
+                                Clust_res0.5 == "0R" & umap_1 < 0 ~ "Rel_in_Diag",
                                 Clust_res0.5 == "0R" ~ "Rel",
                                 Clust_res0.5 == "0D" ~ "Diag_in_Rel",
                                 Clust_res0.5 == "7D" ~ "IC"))
@@ -512,10 +506,6 @@ df %>%
         panel.grid.minor = element_blank(),
         panel.grid.major.y = element_line(colour = "darkred", linetype = "dashed"))
   
-```
-
-```{r}
-saveRDS(SeuratObj_filt, file = paste0(out_seurat_dir,"Seurat3.rds"))
 ```
 
 ```{r}
@@ -666,13 +656,17 @@ FeaturePlot(SeuratObj_filt,
 ```
 
 
-```{r ,fig.width=8}
+```{r ,fig.width=10}
 FeaturePlot(SeuratObj_filt, features = c("MYC","NOTCH1"), blend = T, cols = c("lightgray","red","purple"))
 ```
 
 
 ```{r}
-saveRDS(SeuratObj_filt, file = paste0(out_seurat_dir,"Seurat4.rds"))
+saveRDS(SeuratObj_filt, file = paste0(out_seurat_dir,"Seurat3.rds"))
+```
+
+```{r ,echo=TRUE}
+devtools::session_info()
 ```
 
 

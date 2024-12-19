@@ -5,6 +5,7 @@ gc()        # garbage collector
 cat("\014")   # clear consol
 
 C3M <- T  # whether I'm using the Lab's OS or not
+pct.mt.threshold <- 5  # Threshold for mitochondrial gene expression
 
 ################################################
 ########                                ########
@@ -14,7 +15,7 @@ C3M <- T  # whether I'm using the Lab's OS or not
 
 ##  Directories :     ----------------------------------------------------------
 if(C3M == T){
-  setwd("~/Bureau/Juba/Projects/SingleCell/")
+  setwd("~/Bureau/Projects/SingleCell/")
 } else {
   setwd("/Projects/T-ALL scRNAseq/")
 }
@@ -33,8 +34,6 @@ Implement_VDJ <- function(seurat,
   meta <- seurat@meta.data
   meta$clone_id <- NA
   meta$v_call <- NA
-  meta$j_call <- NA
-  meta$c_call <- NA
   
   ## implement the values
   for (i in 1:nrow(VDJ_data)) {
@@ -42,8 +41,6 @@ Implement_VDJ <- function(seurat,
     if (cell %in% rownames(meta)) {
       meta[cell, "clone_id"] <- VDJ_data$clone_id[i]
       meta[cell, "v_call"] <- VDJ_data$v_call[i]
-      meta[cell, "j_call"] <- VDJ_data$j_call[i]
-      meta[cell, "c_call"] <- VDJ_data$c_call[i]
     }
   }
   
@@ -65,15 +62,15 @@ MyPalette <- c("#9933aa","#ffdd22","#aa4400","#ff0000","#337722","#00ff66","#005
 ########                                ########
 ################################################
 
-Libraries <- grep("Library", list.files(), value = T)
+Libraries <- grep("Library", list.files(path = "data/"), value = T)
 
 for(Lib in Libraries){
   
   ##  Setting directories
   Raw_dir <- paste0("data/",Lib,"/")
-  Seurat_outdir <- paste0(Lib,"/SeuratObjects/")
-  Out_dir_QC <- paste0(Lib,"/Out_figures/QC/")
-  Out_dir_fig <- paste0(Lib,"/Out_figures/")
+  Seurat_outdir <- paste0("ScAnalysis/",Lib,"/SeuratObjects/")
+  Out_dir_QC <- paste0("ScAnalysis/",Lib,"/Out_figures/QC/")
+  Out_dir_fig <- paste0("ScAnalysis/",Lib,"/Out_figures/")
   
   
   ##  Importing 10x data      --------------------------------------
@@ -105,17 +102,46 @@ for(Lib in Libraries){
   table(SeuratObj$hash.ID)
   table(SeuratObj$HTO_classification.global)
   
-  ##  Group cell by their max HTO signal --> identification   -----------------------
-  Idents(SeuratObj) <- "HTO_maxID"
-  RidgePlot(SeuratObj, assay = "HTO", features = rownames(SeuratObj[["HTO"]]), ncol = 2)
+  ##  QC HTODemux --> Import as PDF
+  pdf(file = paste0(Out_dir_QC,Lib,"_QC_HTODemux.pdf"),
+      width = 6,
+      height = 6,
+      title = "QC Demultiplexing")
   
-  ##  Compare number of UMIs for singlets, doublets and negative cells    ---------------
-  Idents(SeuratObj) <- "HTO_classification.global"
-  VlnPlot(SeuratObj, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
+  ##  Cell counts for the different HTOs    ---------------------------
+  print(SeuratObj@meta.data %>% 
+    dplyr::count(hash.ID) %>% 
+    ggplot()+
+    geom_bar(aes(x= hash.ID,
+                 y= n,
+                 fill= hash.ID),
+             width = 0.7,
+             stat = "identity",
+             position = "stack")+
+    scale_fill_manual(values = MyPalette)+
+    labs(x= "",
+         y= "",
+         fill= "HTO")+
+    theme_bw()+
+    theme(axis.text = element_text(size = 11, face = "bold"),
+          legend.title = element_text(size = 12, face = "bold", colour = "darkred"),
+          plot.title = element_text(size = 15, face = "bold", colour = "darkred")))
+  
+  ##  Compare number of UMI distributions across HTOs    --------------------
+  print(VlnPlot(SeuratObj, features = "nCount_RNA", pt.size = 0.1, log = TRUE, group.by = "hash.ID")+
+    labs(title = "UMI distributions",
+         x= "")+
+    scale_fill_manual(values = MyPalette))
+  
+  dev.off()
   
   ##  Subset only singlets      -------------------------------------------------------
+  Idents(SeuratObj) <- SeuratObj$HTO_classification.global
   SeuratObj <- subset(SeuratObj, idents = "Singlet", invert = FALSE)
   HTOHeatmap(SeuratObj, assay = "HTO", ncells = 3000)
+  
+  ##  Save seuratobject       ------------------------------------------------
+  saveRDS(SeuratObj, file = paste0(Seurat_outdir,"Seurat1.rds"))
   
   ##  Mitochondiral gene expression : QC      ---------------------------------
   SeuratObj <- PercentageFeatureSet(SeuratObj,
@@ -130,7 +156,7 @@ for(Lib in Libraries){
       title = "Quality Control")
   
   print(VlnPlot(object = SeuratObj,
-                features=c("nCount_RNA","nFeature_RNA","percent.mt"), pt.size = 0.01))
+                features=c("nCount_RNA","nFeature_RNA","percent.mt"), pt.size = 0.01, log = T))
   
   print(ggplot(SeuratObj@meta.data, 
                aes(x = nCount_RNA, y = nFeature_RNA, color = percent.mt)) +
@@ -145,7 +171,7 @@ for(Lib in Libraries){
   dev.off()
   
   ##  Filtering cells and visualization as PDF    -----------------------------
-  SeuratObj <- subset(SeuratObj, subset = percent.mt < 5 & nFeature_RNA < 3500)
+  SeuratObj <- subset(SeuratObj, subset = percent.mt < pct.mt.threshold & nFeature_RNA < 3500)
   
   pdf(file = paste0(Out_dir_QC,Lib,"_preprocessing_filtered.pdf"), 
       width = 6, 
@@ -153,7 +179,7 @@ for(Lib in Libraries){
       title = "Quality Control - filtered")
   
   print(VlnPlot(object = SeuratObj,
-                features=c("nCount_RNA","nFeature_RNA","percent.mt"), pt.size = 0.01))
+                features=c("nCount_RNA","nFeature_RNA","percent.mt"), pt.size = 0.01, log = T))
   
   print(ggplot(SeuratObj@meta.data, 
                aes(x = nCount_RNA, y = nFeature_RNA, color = percent.mt)) +
@@ -166,6 +192,9 @@ for(Lib in Libraries){
           labs(x = "Number of UMI by cell", y = "Number of detected genes by cell")+
           theme_bw())
   dev.off()
+  
+  ##  Add vdj data          -----------------------------------------------------
+  SeuratObj <- Implement_VDJ(SeuratObj, VDJdata)
   
   ##  SCtransforme the data     -------------------------------------------------
   SeuratObj <- SCTransform(SeuratObj, 
@@ -183,12 +212,6 @@ for(Lib in Libraries){
   SeuratObj <- FindVariableFeatures(SeuratObj, selection.method = "vst", nfeatures = 2000)
   SeuratObj <- ScaleData(SeuratObj, features = rownames(SeuratObj))
   
-  ##  Add vdj data          -----------------------------------------------------
-  SeuratObj <- Implement_VDJ(SeuratObj, VDJdata)
-  
-  ##  Save seuratobject       ------------------------------------------------
-  saveRDS(SeuratObj, file = paste0(Seurat_outdir,"Seurat1.rds"))
-  
   #   Clustering        ----------------------------------------------------------
   ##  Linear dim reduction      --------------------------------------------------
   SeuratObj <- RunPCA(SeuratObj, 
@@ -202,7 +225,7 @@ for(Lib in Libraries){
   
   ##  Clustering      -------------------------------------------------------------
   SeuratObj <- FindNeighbors(SeuratObj, dims = 1:30, verbose = FALSE)
-  SeuratObj <- FindClusters(SeuratObj, verbose = FALSE, resolution = seq(0.1, 1, by= 0.1))
+  SeuratObj <- FindClusters(SeuratObj, verbose = FALSE, resolution = seq(0.1, 1.3, by= 0.2))
   
   ##  Add umap coordinates to metadata      ---------------------------------------
   SeuratObj@meta.data <- merge(SeuratObj@meta.data, 
@@ -230,16 +253,13 @@ for(Lib in Libraries){
                 group.by = "SCT_snn_res.0.1",
                 cols = MyPalette))
   print(DimPlot(SeuratObj, 
-                group.by = "SCT_snn_res.0.3",
-                cols = MyPalette))
-  print(DimPlot(SeuratObj, 
                 group.by = "SCT_snn_res.0.5",
                 cols = MyPalette))
   print(DimPlot(SeuratObj, 
-                group.by = "SCT_snn_res.0.7",
+                group.by = "SCT_snn_res.0.9",
                 cols = MyPalette))
   print(DimPlot(SeuratObj, 
-                group.by = "SCT_snn_res.0.9",
+                group.by = "SCT_snn_res.1.3",
                 cols = MyPalette))
   dev.off()
   
@@ -249,49 +269,28 @@ for(Lib in Libraries){
       height = 5,
       title = "Clonotypes - no.filt")
   
-  print(ggplot(SeuratObj@meta.data)+
-          geom_point(aes(x= umap_1,
-                         y= umap_2,
-                         colour= hash.ID),
-                     size = 0.6)+
-          labs(title = "General conditions",
-               colour = "Conditions")+
-          theme_bw()+
-          scale_colour_manual(values = MyPalette)+
-          theme(legend.position = "right",
-                panel.grid = element_blank()))
+  print(DimPlot(SeuratObj,
+          group.by = "hash.ID",
+          cols = MyPalette,
+          pt.size = 0.7,
+          alpha = 0.8)+
+    labs(title = "General conditions",
+         colour = "Conditions"))
   
-  print(ggplot(SeuratObj@meta.data)+
-          geom_point(aes(x= umap_1,
-                         y= umap_2,
-                         colour= Phase),
-                     size = 0.6)+
-          labs(title = "Cell Cycle",
-               colour = "CC Phases")+
-          theme_bw()+
-          scale_colour_manual(values = MyPalette)+
-          theme(legend.position = "right",
-                panel.grid = element_blank()))
+  print(DimPlot(SeuratObj,
+          group.by = "Phase",
+          cols = MyPalette,
+          pt.size = 0.7,
+          alpha = 0.8)+
+    labs(title = "Cell cycle",
+         colour = "CC Phases"))
   
-  print(ggplot(SeuratObj@meta.data)+
-          geom_point(aes(x= umap_1,
-                         y= umap_2,
-                         colour= clone_id),
-                     size = 0.6)+
-          labs(title = "Clonotypes")+
-          theme_bw()+
-          theme(legend.position = "none",
-                panel.grid = element_blank()))
-  
-  print(ggplot(SeuratObj@meta.data)+
-          geom_point(aes(x= umap_1,
-                         y= umap_2,
-                         colour= clone_id),
-                     size = 0.6)+
-          labs(title = "TCR")+
-          theme_bw()+
-          theme(legend.position = "none",
-                panel.grid = element_blank()))
+  print(DimPlot(SeuratObj,
+          group.by = "clone_id",
+          pt.size = 0.7,
+          alpha = 0.8)+
+    labs(title = "Clonotypes")+
+    theme(legend.position = "none"))
   
   dev.off()
   
