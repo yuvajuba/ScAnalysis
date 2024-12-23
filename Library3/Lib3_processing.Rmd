@@ -26,8 +26,8 @@ params:
 ##########################
 
 packages <- installed.packages()[,"Package"]
-cran_packages <- c("knitr", "Seurat", "dplyr", "tidyr", "ggplot2", "tibble", 
-                   "writexl", "readxl", "msigdbr","clustree","circlize","cowplot") 
+cran_packages <- c("knitr", "Seurat", "dplyr", "ggplot2", "tibble", 
+                   "writexl","clustree","cowplot") 
 bioc_packages <- c("clusterProfiler", "org.Hs.eg.db", "AnnotationDbi", 
                    "fgsea", "enrichplot","ComplexHeatmap")
 
@@ -45,13 +45,10 @@ for(package in bioc_packages[!(bioc_packages %in% packages)]) {
 library(knitr)
 library(Seurat)
 library(dplyr)
-library(tidyr)
 library(ggplot2)
 library(tibble)
 library(writexl)
 library(clustree)
-library(circlize)
-library(ComplexHeatmap)
 library(stringr)
 library(cowplot)
 library(devtools)
@@ -69,9 +66,9 @@ MyPalette <- c("#9933aa","#ffdd22","#aa4400","#ff0000","#337722","#00ff66","#005
 
 ## Directories :
 if(params$c3m == T){
-  out_object_dir <- "~/Bureau/Juba/Projects/SingleCell/Library3/Out_objects/"
-  out_figure_dir <- "~/Bureau/Juba/Projects/SingleCell/Library3/Out_figures/"
-  out_seurat_dir <- "~/Bureau/Juba/Projects/SingleCell/Library3/SeuratObjects/"
+  out_object_dir <- "~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/"
+  out_figure_dir <- "~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_figures/"
+  out_seurat_dir <- "~/Bureau/Projects/SingleCell/ScAnalysis/Library3/SeuratObjects/"
 } else {
   out_object_dir <- "/Projects/T-ALL scRNAseq/Library3/OutObjects/"
   out_figure_dir <- "/Projects/T-ALL scRNAseq/Library3/OutFigures/"
@@ -125,7 +122,7 @@ My_ggplot_theme <- function(){
 
 ```{r}
 if(params$c3m == T){
-  SeuratObj <- readRDS("~/Bureau/Juba/Projects/SingleCell/Library3/SeuratObjects/Seurat2.rds")
+  SeuratObj <- SeuratObj <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/SeuratObjects/Seurat2.rds")
 } else {
   SeuratObj <- readRDS("/Projects/T-ALL scRNAseq/Library3/SeuratObjects/ Seurat2.rds")
 }
@@ -143,15 +140,11 @@ SeuratObj@meta.data <- SeuratObj@meta.data %>%
 SeuratObj@meta.data <- SeuratObj@meta.data %>% 
   mutate(
     Clust_res0.1 = as.factor(paste0(SCT_snn_res.0.1, substr(SeuratObj$hash.ID,1,1))),
-    Clust_res0.2 = as.factor(paste0(SCT_snn_res.0.2, substr(SeuratObj$hash.ID,1,1))),
     Clust_res0.3 = as.factor(paste0(SCT_snn_res.0.3, substr(SeuratObj$hash.ID,1,1))),
-    Clust_res0.4 = as.factor(paste0(SCT_snn_res.0.4, substr(SeuratObj$hash.ID,1,1))),
     Clust_res0.5 = as.factor(paste0(SCT_snn_res.0.5, substr(SeuratObj$hash.ID,1,1))),
-    Clust_res0.6 = as.factor(paste0(SCT_snn_res.0.6, substr(SeuratObj$hash.ID,1,1))),
     Clust_res0.7 = as.factor(paste0(SCT_snn_res.0.7, substr(SeuratObj$hash.ID,1,1))),
-    Clust_res0.8 = as.factor(paste0(SCT_snn_res.0.8, substr(SeuratObj$hash.ID,1,1))),
     Clust_res0.9 = as.factor(paste0(SCT_snn_res.0.9, substr(SeuratObj$hash.ID,1,1))),
-    Clust_res1 = as.factor(paste0(SCT_snn_res.1, substr(SeuratObj$hash.ID,1,1)))
+    Clust_res1.1 = as.factor(paste0(SCT_snn_res.1.1, substr(SeuratObj$hash.ID,1,1)))
   )
 ```
 
@@ -165,10 +158,10 @@ DimPlot(SeuratObj, cols = MyPalette, group.by = "hash.ID", label = F, label.box 
 ```
 
 
-##    Clusteres at res0.2
+##    Clusteres at res0.3
 
 ```{r}
-DimPlot(SeuratObj, cols = MyPalette, group.by = "Clust_res0.2", 
+DimPlot(SeuratObj, cols = MyPalette, group.by = "Clust_res0.3", 
         label = T, label.box = T, repel = T, label.color = "white", label.size = 4)
 ```
 
@@ -199,7 +192,7 @@ This will help us determine any cluster that may not be of interest !
 [We'll realize the inspection using the expression plot and violin plots with the 0.2 resolution below]{style='color:purple ; font-weight:600 ; font-size:100%'}
 
 ```{r}
-DimPlot(SeuratObj, cols = MyPalette, group.by = "SCT_snn_res.0.2", 
+DimPlot(SeuratObj, cols = MyPalette, group.by = "SCT_snn_res.0.3", 
         label = T, label.box = T, repel = T, label.color = "white", label.size = 4)
 ```
 
@@ -210,7 +203,7 @@ DimPlot(SeuratObj, cols = MyPalette, group.by = "SCT_snn_res.0.2",
 try(VlnPlot(SeuratObj, 
             features = c("CD3D","CD4","CD8A","IL7R"), 
             ncol = 2, 
-            group.by = "SCT_snn_res.0.2",
+            group.by = "SCT_snn_res.0.3",
             split.by = "hash.ID",
             cols = MyPalette))+
   theme(legend.position = "right",
@@ -233,7 +226,7 @@ Basically here, we're looking for
 try(VlnPlot(SeuratObj, 
             features = c("CD14","LYZ","NKG7","GNLY","MS4A1","MPO","EPCAM","CD34"), 
             ncol = 3, 
-            group.by = "SCT_snn_res.0.2",
+            group.by = "SCT_snn_res.0.3",
             split.by = "hash.ID",
             cols = MyPalette))+
   theme(legend.position = "right",
@@ -369,14 +362,14 @@ SeuratObj@meta.data %>%
 ##    Clusters
 
 ```{r}
-DimPlot(SeuratObj, cols = MyPalette, group.by = c("Clust_res0.2"), 
+DimPlot(SeuratObj, cols = MyPalette, group.by = c("Clust_res0.3"), 
         label = T, label.box = T, repel = T, label.color = "white", label.size = 4)
 ```
 
 
 ```{r ,rows.print=8}
 SeuratObj@meta.data %>% 
-  dplyr::count(Clust_res0.2) %>% 
+  dplyr::count(Clust_res0.3) %>% 
   arrange(desc(n))
 ```
 
@@ -384,7 +377,7 @@ And with the clonotypes :
 
 ```{r ,rows.print=10}
 SeuratObj@meta.data %>% 
-  group_by(clone_id, Clust_res0.2) %>% 
+  group_by(clone_id, Clust_res0.3) %>% 
   summarise(count = n()) %>% 
   arrange(desc(count)) -> df ; df
 ```
@@ -393,7 +386,7 @@ SeuratObj@meta.data %>%
 df %>% 
   head(30) %>% 
   ggplot()+
-  geom_bar(aes(x= Clust_res0.2,
+  geom_bar(aes(x= Clust_res0.3,
                y= count,
                fill= clone_id),
            stat = "identity",
@@ -418,7 +411,7 @@ df %>%
 df %>% 
   head(30) %>% 
   ggplot()+
-  geom_bar(aes(x= Clust_res0.2,
+  geom_bar(aes(x= Clust_res0.3,
                y= count,
                fill= clone_id),
            stat = "identity",
@@ -452,12 +445,12 @@ Based on the observations from the cells and clonotype analysis :
 ```{r}
 cells_rm <- WhichCells(SeuratObj, 
                        expression = umap_1 > 5 | umap_2 > 6 | 
-                         Clust_res0.2 %in% c("1D","2R") | clone_id %in% c("unique","other"))
+                         Clust_res0.3 %in% c("1D","2R") | clone_id %in% c("unique","other"))
 SeuratObj_filt <- subset(SeuratObj, cells = setdiff(Cells(SeuratObj),cells_rm))
 ```
 
 ```{r ,fig.width=12}
-DimPlot(SeuratObj_filt, group.by = c("hash.ID","Clust_res0.2"), cols = MyPalette,
+DimPlot(SeuratObj_filt, group.by = c("hash.ID","Clust_res0.3"), cols = MyPalette,
         label = T, label.box = T, repel = T, label.color = "white", label.size = 5)
 ```
 
@@ -465,12 +458,12 @@ DimPlot(SeuratObj_filt, group.by = c("hash.ID","Clust_res0.2"), cols = MyPalette
 
 ```{r}
 SeuratObj_filt@meta.data <- SeuratObj_filt@meta.data %>% 
-  mutate(MyClusters = case_when(Clust_res0.2 %in% c("2D") ~ "Diag1",
-                                Clust_res0.2 %in% c("0R","1R") & umap_1 > 0.2 & umap_2 > -2.5 & umap_2 < 0 ~ "Rel_in_Diag1",
-                                Clust_res0.2 %in% c("1R","0R") ~ "Rel1",
-                                Clust_res0.2 %in% c("0D") & umap_1 <= 0 ~ "Diag_in_Rel1",
-                                Clust_res0.2 == "5R" ~ "Rel2",
-                                Clust_res0.2 == "5D" ~ "Diag2",
+  mutate(MyClusters = case_when(Clust_res0.3 %in% c("2D") ~ "Diag1",
+                                Clust_res0.3 %in% c("0R","1R") & umap_1 > 0.2 & umap_2 > -2.5 & umap_2 < 0 ~ "Rel_in_Diag1",
+                                Clust_res0.3 %in% c("1R","0R") ~ "Rel1",
+                                Clust_res0.3 %in% c("0D") & umap_1 <= 0 ~ "Diag_in_Rel1",
+                                Clust_res0.3 == "5R" ~ "Rel2",
+                                Clust_res0.3 == "5D" ~ "Diag2",
                                 TRUE ~ "others"))
 
 DimPlot(SeuratObj_filt, cols = MyPalette, group.by = c("MyClusters"), 
@@ -543,10 +536,6 @@ df %>%
         panel.grid.minor = element_blank(),
         panel.grid.major.y = element_line(colour = "darkred", linetype = "dashed"))
   
-```
-
-```{r}
-saveRDS(SeuratObj_filt, file = paste0(out_seurat_dir,"Seurat3.rds"))
 ```
 
 ```{r}
@@ -737,7 +726,11 @@ SeuratObj_filt@meta.data <- SeuratObj_filt@meta.data %>%
 
 
 ```{r}
-saveRDS(SeuratObj_filt, file = paste0(out_seurat_dir,"Seurat4.rds"))
+saveRDS(SeuratObj_filt, file = paste0(out_seurat_dir,"Seurat3.rds"))
+```
+
+```{r ,echo=TRUE}
+devtools::session_info()
 ```
 
 
