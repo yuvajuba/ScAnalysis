@@ -13,6 +13,7 @@ library(DT)
 library(stringr)
 library(shiny)
 library(shinythemes)
+library(shinyBS)
 library(bslib)
 library(circlize)
 library(purrr)
@@ -233,7 +234,8 @@ options(shiny.maxRequestSize = 900*1024^2)
 
 #  Shiny ui    ####################
 ui <- fluidPage(
-  theme = bs_theme(bootswatch = "flatly"),
+  # theme = bs_theme(bootswatch = "flatly"),
+  theme = shinytheme("flatly"),
   h2("I- Importing the data",
      style = "color:gold ; font-weight:700 ; background-color:black ; margin-top:10px ; margin-bottom:20px"),
   
@@ -274,12 +276,12 @@ ui <- fluidPage(
   
   ### 1- Making the contrasts   --------------------------------------------------
   p("1- Select the contrasts",
-    style = "color:darkred ; font-weight:600 ; font-size:130% ; background-color:gold ; margin-bottom:20px"),
+    style = "color:darkred ; font-weight:600 ; font-size:140% ; background-color:gold ; margin-bottom:20px"),
   fluidRow(
     column(width = 4,
-           p("From the selected metadata above, choose the cluster you want to test and againt which cluster ! 
+           p("From the selected metadata above, choose the cluster you want to test and against which cluster ! 
              (e.g Relapse vs Diagnosis)",
-             style = "font-size:110% ; font-weight:600 ; color:darkgreen"),
+             style = "font-size:110% ; font-weight:600 ; color:darkgreen ; margin-bottom:20px"),
            selectInput("ident.1", "Selection 1", choices = c(), width = "300px"),
            selectInput("ident.2", "Selection 2", choices = c(), width = "300px")),
     column(width = 6,
@@ -289,12 +291,39 @@ ui <- fluidPage(
   
   ### 2- Setting the parameters   ------------------------------------------------
   p("2- Setting the parameters (prior DEA)",
-    style = "color:darkred ; font-weight:600 ; font-size:130% ; background-color:gold ; margin-top: 20px ; margin-bottom:20px"),
+    style = "color:darkred ; font-weight:600 ; font-size:140% ; background-color:gold ; margin-top: 20px ; margin-bottom:20px"),
   fluidRow(
-    column(width = 2,
-           sliderInput("log2fc", "Logfc min.threshold", min = 0, max = 3, step = 0.1, value = 0.5, width = "200px"),
-           p("Define the minimum Log2FC threshold to be kept in an absolute value",
-             style = "color:darkgray ; font-style:italic ; font-size:90%"),
+    column(width = 2.5,
+           p("Initial parameters", style = "color:darkgreen ; font-weight:600 ; font-size:120% ; margin-bottom:30px"),
+           div(
+             tags$span(
+             style = "font-weight:600 ; font-size:110%",
+             "Log2FC min.threshold ",
+             icon("info-circle", id= "info-numeric", style = "color:midnightblue ; cursor:pointer")
+             ),
+             numericInput("log2fc",NULL,value = 0.5, min = 0, max = 3, step = 0.1, width = "200px")
+           ),
+           bsTooltip(id = "info-numeric",
+                     title = "Define the minimum Log2FC threshold to be applied before running the DEA (in absolute value).",
+                     placement = "top", trigger = "hover", options = list(container = "body")),
+           
+           div(
+             tags$span(
+               style = "font-weight:600 ; font-size:110%",
+               "Min.pct threshold ",
+               icon("info-circle", id= "info-numeric2", style = "color:midnightblue ; cursor:pointer")
+             ),
+             numericInput("min.pct",NULL,value = 0.1, min = 0, max = 1, step = 0.05, width = "200px")
+           ),
+           bsTooltip(id = "info-numeric2",
+                     title = "Define the minimum percentage of cells within any cluster that have to express the gene",
+                     placement = "top", trigger = "hover", options = list(container = "body")),
+           
+           
+           p("Additional filtering", 
+             style = "color:darkgreen ; font-weight:600 ; font-size:120% ; margin-bottom:30px ; margin-top:20px"),
+           
+           
            sliderInput("min.pct", "Min.pct threshold", min = 0, max = 1, step = 0.05, value = 0.1, width = "200px"),
            p("Define the minimum percentage of cells within any cluster that have to express the gene",
              style = "color:darkgray ; font-style:italic ; font-size:90%")),
