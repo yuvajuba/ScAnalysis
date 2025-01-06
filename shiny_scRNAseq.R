@@ -137,7 +137,8 @@ Display_Venn <- function(Markers, colpalette = NULL, set.names = NULL) {
       if(i == 3){
         common_genes[[paste(names(x[[s]]), collapse = " ∩ ")]] <- purrr::reduce(list(x[[s]][[1]],
                                                                                      x[[s]][[2]],
-                                                                                     x[[s]][[3]]), intersect)
+                                                                                     x[[s]][[3]]), 
+                                                                                intersect)
       }
       
       if(i == 4){
@@ -153,36 +154,55 @@ Display_Venn <- function(Markers, colpalette = NULL, set.names = NULL) {
     for(s in 1:length(x)){
       if(i == 2){
         specific_genes[[paste(names(x[[s]]), collapse = " or ")]] <- setNames(list(setdiff(x[[s]][[1]], 
-                                                                                           intersect(x[[s]][[1]], x[[s]][[2]])),
+                                                                                           intersect(x[[s]][[1]], 
+                                                                                                     x[[s]][[2]])),
                                                                                    setdiff(x[[s]][[2]], 
-                                                                                           intersect(x[[s]][[1]], x[[s]][[2]]))),
-                                                                              c(names(x[[s]][1]), names(x[[s]][2])))
+                                                                                           intersect(x[[s]][[1]], 
+                                                                                                     x[[s]][[2]]))),
+                                                                              c(names(x[[s]][1]), 
+                                                                                names(x[[s]][2])))
       }
       
       if(i == 3){
         specific_genes[[paste(names(x[[s]]), collapse = " or ")]] <- setNames(list(setdiff(x[[s]][[1]], 
-                                                                                           union(x[[s]][[2]], x[[s]][[3]])),
+                                                                                           union(x[[s]][[2]], 
+                                                                                                 x[[s]][[3]])),
                                                                                    setdiff(x[[s]][[2]], 
-                                                                                           union(x[[s]][[1]], x[[s]][[3]])),
+                                                                                           union(x[[s]][[1]], 
+                                                                                                 x[[s]][[3]])),
                                                                                    setdiff(x[[s]][[3]], 
-                                                                                           union(x[[s]][[2]], x[[s]][[1]]))),
-                                                                              c(names(x[[s]][1]), names(x[[s]][2]), names(x[[s]][3])))
+                                                                                           union(x[[s]][[2]], 
+                                                                                                 x[[s]][[1]]))),
+                                                                              c(names(x[[s]][1]), 
+                                                                                names(x[[s]][2]), 
+                                                                                names(x[[s]][3])))
       }
       
       if(i == 4){
         specific_genes[["unique each"]] <- setNames(list(setdiff(x[[s]][[1]],
-                                                                 purrr::reduce(list(x[[s]][[2]], x[[s]][[3]], x[[s]][[4]]), 
+                                                                 purrr::reduce(list(x[[s]][[2]], 
+                                                                                    x[[s]][[3]], 
+                                                                                    x[[s]][[4]]), 
                                                                                union)),
                                                          setdiff(x[[s]][[2]],
-                                                                 purrr::reduce(list(x[[s]][[1]], x[[s]][[3]], x[[s]][[4]]), 
+                                                                 purrr::reduce(list(x[[s]][[1]], 
+                                                                                    x[[s]][[3]], 
+                                                                                    x[[s]][[4]]), 
                                                                                union)),
                                                          setdiff(x[[s]][[3]],
-                                                                 purrr::reduce(list(x[[s]][[2]], x[[s]][[1]], x[[s]][[4]]), 
+                                                                 purrr::reduce(list(x[[s]][[2]], 
+                                                                                    x[[s]][[1]], 
+                                                                                    x[[s]][[4]]), 
                                                                                union)),
                                                          setdiff(x[[s]][[4]],
-                                                                 purrr::reduce(list(x[[s]][[2]], x[[s]][[3]], x[[s]][[1]]), 
+                                                                 purrr::reduce(list(x[[s]][[2]], 
+                                                                                    x[[s]][[3]], 
+                                                                                    x[[s]][[1]]), 
                                                                                union))),
-                                                    c(names(x[[s]][1]),names(x[[s]][2]),names(x[[s]][3]),names(x[[s]][4])))
+                                                    c(names(x[[s]][1]),
+                                                      names(x[[s]][2]),
+                                                      names(x[[s]][3]),
+                                                      names(x[[s]][4])))
       }
     }
   }
@@ -212,9 +232,12 @@ my_umap_theme <- function(){
     theme(panel.grid = element_blank(),
           axis.text = element_blank(),
           axis.title = element_blank(),
-          plot.title = element_text(size = 20, face = "bold", colour = "darkred", hjust = 0.5, margin = margin(b= 0.2, unit = "cm")),
-          plot.subtitle = element_text(size = 17, face = "bold", colour = "#771144", hjust = 0.5, margin = margin(b= 0.5, unit = "cm")),
-          legend.title = element_text(size = 17, face = "bold", colour = "darkred", hjust = 0.5, margin = margin(b= 0.5, unit = "cm")),
+          plot.title = element_text(size = 20, face = "bold", colour = "darkred", 
+                                    hjust = 0.5, margin = margin(b= 0.2, unit = "cm")),
+          plot.subtitle = element_text(size = 17, face = "bold", colour = "#771144", 
+                                       hjust = 0.5, margin = margin(b= 0.5, unit = "cm")),
+          legend.title = element_text(size = 17, face = "bold", colour = "darkred", 
+                                      hjust = 0.5, margin = margin(b= 0.5, unit = "cm")),
           legend.box.margin = margin(l= 0.5, unit = "cm"),
           legend.text = element_text(size = 14, colour = "black", face = "bold"))
 }
@@ -263,11 +286,11 @@ ui <- fluidPage(
              a differential expressed analysis on the next steps",
              style = "font-style:italic ; color:darkgray ; font-size:90% ; margin-bottom:30px"),
            plotOutput("plt1", height = "500px")),
-    column(width = 3,
+    column(width = 4,
            offset = 1,
-           actionButton("act1", "View the summary", class = "btn-primary", 
-                        width = "100%", style = "font-size:24px ; color:gold ; font-weight:600 ; border-radius:15px"),
-           p("", style = "margin-top:30px"),
+           actionLink("act1", "View the summary", icon = icon("hand-point-right"),
+                      style = "font-size:24px ; color:purple ; font-weight:600"),
+           p("", style = "margin-bottom:30px"),
            tableOutput("tab1"))
   ),
   
@@ -292,7 +315,8 @@ ui <- fluidPage(
   
   ### 2- Setting the parameters   ------------------------------------------------
   p("2- Setting the parameters & Run the DEA",
-    style = "color:darkred ; font-weight:600 ; font-size:160% ; background-color:gold ; margin-top: 50px ; margin-bottom:20px"),
+    style = "color:darkred ; font-weight:600 ; font-size:160% ; 
+    background-color:gold ; margin-top: 50px ; margin-bottom:20px"),
   fluidRow(
     column(width = 3,
            p("Initial parameters", 
@@ -383,7 +407,8 @@ ui <- fluidPage(
                  div(
                    style = "margin-top:30px ; margin-bottom:30px",
                    downloadButton("download.tab","Download as excel", class = "btn-sm",
-                                  style = "font-size:20px ; background-color:darkgreen ; padding:5px 150px ; border-radius:10px")
+                                  style = "font-size:20px ; background-color:darkgreen ; 
+                                  padding:5px 150px ; border-radius:10px")
                  )
                )
              ),
@@ -424,7 +449,8 @@ ui <- fluidPage(
                    style = "margin-top:30px ; margin-bottom:30px",
                    actionButton("download.bplot","Download as pdf", 
                                 class = "btn-sm", icon = icon("download"),
-                                style = "font-size:20px ; background-color:darkgreen ; padding:5px 150px ; border-radius:10px")
+                                style = "font-size:20px ; background-color:darkgreen ; 
+                                padding:5px 150px ; border-radius:10px")
                  )
                )
              ),
@@ -441,7 +467,8 @@ ui <- fluidPage(
                             "Up genes",
                             icon("info-circle", id= "info-sel1", style = "color:midnightblue ; cursor:pointer")
                           ),
-                          selectInput("Sel.up.dplot",NULL, choices = c(), multiple = T, selectize = F, width = "90%", size = 10)
+                          selectInput("Sel.up.dplot",NULL, choices = c(), 
+                                      multiple = T, selectize = F, width = "90%", size = 10)
                         ),
                         bsTooltip(id = "info-sel1",
                                   title = "From the most up-regulated to the least",
@@ -454,7 +481,8 @@ ui <- fluidPage(
                             "Down genes",
                             icon("info-circle", id= "info-sel2", style = "color:midnightblue ; cursor:pointer")
                           ),
-                          selectInput("Sel.down.dplot",NULL, choices = c(), multiple = T, selectize = F, width = "90%", size = 10)
+                          selectInput("Sel.down.dplot",NULL, choices = c(), 
+                                      multiple = T, selectize = F, width = "90%", size = 10)
                         ),
                         bsTooltip(id = "info-sel2",
                                   title = "From the most down-regulated to the least",
@@ -486,7 +514,8 @@ ui <- fluidPage(
                    style = "margin-top:30px ; margin-bottom:30px",
                    actionButton("download.dplot","Download as pdf", 
                                 class = "btn-sm", icon = icon("download"),
-                                style = "font-size:20px ; background-color:darkgreen ; padding:5px 150px ; border-radius:10px")
+                                style = "font-size:20px ; background-color:darkgreen ; 
+                                padding:5px 150px ; border-radius:10px")
                  )
                )
              ),
@@ -514,7 +543,8 @@ ui <- fluidPage(
                             "Up genes",
                             icon("info-circle", id= "info-selHmUp", style = "color:midnightblue ; cursor:pointer")
                           ),
-                          selectInput("Sel.up.hmplot",NULL, choices = c(), multiple = T, selectize = F, width = "90%", size = 15)
+                          selectInput("Sel.up.hmplot",NULL, choices = c(), 
+                                      multiple = T, selectize = F, width = "90%", size = 13)
                         ),
                         bsTooltip(id = "info-selHmUp",
                                   title = "From the most up-regulated to the least",
@@ -527,7 +557,8 @@ ui <- fluidPage(
                             "Down genes",
                             icon("info-circle", id= "info-selHmDown", style = "color:midnightblue ; cursor:pointer")
                           ),
-                          selectInput("Sel.down.hmplot",NULL, choices = c(), multiple = T, selectize = F, width = "90%", size = 15)
+                          selectInput("Sel.down.hmplot",NULL, choices = c(), 
+                                      multiple = T, selectize = F, width = "90%", size = 13)
                         ),
                         bsTooltip(id = "info-selHmDown",
                                   title = "From the most down-regulated to the least",
@@ -540,22 +571,22 @@ ui <- fluidPage(
                             "Select annotation",
                             icon("info-circle", id= "info-selHmAnnot", style= "color:midnightblue; cursor:pointer")
                           ),
-                          selectInput("Sel.HmAnnot",NULL, choices = c(), multiple = T, selectize = F, width = "90%", size = 6),
-                          actionButton("GenerateData.hmAnnot", "Upload the data", icon = icon("hand-point-right"),
-                                       style = "font-size:16px ; background-color:purple ;  
-                                       padding:5px 40px ; border-radius:10px ; margin-top:10px ; border-color:black"),
+                          selectInput("Sel.HmAnnot",NULL, choices = c(), 
+                                      multiple = T, selectize = F, width = "90%", size = 7),
+                          actionLink("GenerateData.hmAnnot", "Upload the data", icon = icon("hand-point-right"),
+                                     style = "font-size:16px ; margin-top:10px ; color:purple ; font-weight:600"),
                           p("Then", style = "font-weight:600; font-size:14px; margin-top:10px"),
-                          actionButton("Setup.hm", "Generate the plot", icon = icon("hand-point-right"),
-                                       style = "font-size:16px ; background-color:purple ;  
-                                       padding:5px 40px ; border-radius:10px ; border-color:black"),
-                          p("Then", style = "font-weight:600; font-size:14px; margin-top:15px"),
-                          actionButton("plot.hm", "Display the plot", class = "btn-sm", width = "90%",
-                                       style = "font-size:21px ; background-color:midnightblue ; 
-                                       padding:5px 40px ; border-radius:10px ; margin-top:10px ; border-color:red")
+                          actionLink("Setup.hm", "Generate the plot", icon = icon("hand-point-right"),
+                                     style = "font-size:16px; color:purple; margin-top:10px; 
+                                     font-weight:600; margin-bottom:20px")
                         ),
                         bsTooltip(id = "info-selHmAnnot",
-                                  title = "Select the metadata you want to annotate your heatmap with",
-                                  placement = "top", trigger = "hover", options = list(container = "body")))
+                                  title = "Select the metadata you want to annotate your heatmap with. You can select up to 3 !",
+                                  placement = "top", trigger = "hover", options = list(container = "body")),
+                        textOutput("hm.ready"),
+                        actionButton("plot.hm", "Display the plot", class = "btn-sm", width = "90%",
+                                     style = "font-size:20px; background-color:midnightblue; font-weight:600
+                                     padding:5px 40px; border-radius:10px; margin-top:20px; border-color:cadetblue"))
                ),
                
                fluidRow(
@@ -568,19 +599,111 @@ ui <- fluidPage(
                    )
                  ),
                  div(
-                  style = "overflow-x:auto; height:auto; width:100%",
-                  plotOutput("plt5", width = "auto", height = "auto") 
+                   style = "overflow-x:auto; height:auto; width:100%",
+                   plotOutput("plt5", width = "auto", height = "auto") 
                  ),
                  div(
                    style = "margin-top:30px; margin-bottom:30px",
                    actionButton("download.hmplot", "Download as pdf",
                                 class = "btn-sm", icon = icon("download"),
-                                style = "font-size:20px ; background-color:darkgreen ; padding:5px 150px ; border-radius:10px")
+                                style = "font-size:20px ; background-color:darkgreen ; 
+                                padding:5px 150px ; border-radius:10px")
                  )
                )
              )
              
            ))
+  ),
+  
+  ## IV- Markers inspection   ---------------------------------------------------------
+  h1("IV- Markers inspection",
+     style = "color:gold ; font-weight:700 ; background-color:black ; margin-top:200px ; margin-bottom:20px"),
+  
+  ### 1- Displaying the list of genes     ------------------------------------------
+  p("1- Displaying the list of genes",
+    style = "color:darkred ; font-weight:600 ; font-size:160% ; background-color:gold ; margin-bottom:20px"),
+  fluidRow(
+    column(width = 6,
+           div(
+             style = "margin-bottom:20px",
+             tags$span(
+               style = "font-weight:600; font-size:130%; color:darkgreen; 
+                            border-bottom:4px solid darkred; padding-bottom: 4px",
+               "Up regulated genes: "
+             )
+           ),
+           radioButtons("show_upgenes", NULL, choices = c("Top10", "Top50", "All"), 
+                        inline = T, selected = ""),
+           textOutput("genes1")),
+    column(width = 6,
+           div(
+             style = "margin-bottom:20px",
+             tags$span(
+               style = "font-weight:600; font-size:130%; color:darkgreen; 
+                            border-bottom:4px solid darkred; padding-bottom: 4px",
+               "Down regulated genes: "
+             )
+           ),
+           radioButtons("show_downgenes", NULL, choices = c("Top10", "Top50", "All"), 
+                        inline = T, selected = ""),
+           textOutput("genes2"))
+  ),
+  
+  fluidRow(
+    column(width = 6,
+           div(
+             style = "margin-bottom:20px; margin-top:20px",
+             tags$span(
+               style = "font-weight:600; font-size:130%; color:darkgreen; 
+                            border-bottom:4px solid darkred; padding-bottom: 4px",
+               "Save the list"
+             )
+           ),
+           p("Add the list of genes from this DEA into a cumulative list of markers to be 
+             compared later",
+             style = "font-size:110%; font-weight:600; margin-bottom:10px"),
+           textInput("name.list", "Name your list"),
+           actionLink("add.markers", "Click to add these markers", icon = icon("hand-point-right"),
+                      style = "font-size:16px; color:purple; font-weight:600; margin-bottom:20px")),
+    column(width = 6,
+           p("", style = "margin-top:20px"),
+           verbatimTextOutput("list_markers"),
+           downloadButton("download.markers", "Download the list",
+                          icon = icon("download"),
+                          style = "font-size:20px ; background-color:darkgreen ; 
+                                  padding:5px 150px ; border-radius:10px ; margin-top:10px"),
+           actionButton("ac","Clear you list", class = "btn-sm btn-danger",
+                        style = "margin-top:20px; margin-bottom:30px; padding:4px 80px ; 
+                        border-radius:10px; font-size:18px"))
+  ),
+  
+  ### 2- Compare markers     ----------------------------------------------------
+  p("2- Compare the markers",
+    style = "color:darkred ; font-weight:600 ; font-size:160% ; background-color:gold ; 
+    margin-bottom:20px ; margin-top:30px"),
+  p("Let's find the common and specific genes among the contrasts !",
+    style = "color:darkgreen ; font-weight:600 ; font-size:100%"),
+  
+  fluidRow(
+    column(width = 3,
+           div(
+             style = "margin-top:20px; margin-bottom:20px",
+             tags$span(
+               style = "font-size:110%; font-weight:600",
+               "Select from the current list",
+               icon("info-circle", id= "info-selMarkers", style= "color:midnightblue; cursor:pointer")
+             ),
+             selectInput("sel.markers.list", NULL, choices = c(), multiple = T,
+                         selectize = F, size = 7, width = "300px")
+           ),
+           bsTooltip(id = "info-selMarkers",
+                     title = "You can make up to 4 comparison (any selection over the 4th will be ignored)",
+                     placement = "top", trigger = "hover", options = list(container = "body")),
+           radioButtons("up_down", "Which genes to compare ?", 
+                        choices = c("Up genes","Down genes","All genes"), inline = F, selected = ""),
+           actionButton("display_venn", "Display Venn diagram", class = "btn-sm", width = "90%",
+                        style = "font-size:18px; background-color:midnightblue; font-weight:600; margin-bottom:30px;
+                        border-radius:10px; margin-top:10px; border-color:cadetblue"))
   )
 )
 
@@ -883,6 +1006,15 @@ server <- function(input, output, session){
     updateSelectInput(session, "Sel.HmAnnot", choices = meta)
   })
   
+  # initiate text-info for the heatmap as reactive value:
+  hm.text_info <- reactiveVal("Heatmap is not ready yet to be displayed ! 
+                              make sure to click on the links above first")
+  
+  # Print the text:
+  output$hm.ready <- renderText({
+    hm.text_info()
+  })
+  
   #### Expression assay       -----------------------------------------------------
   ExpressionAssay <- eventReactive(input$GenerateData.hmAnnot, {
     req(seurat())
@@ -894,7 +1026,8 @@ server <- function(input, output, session){
   observeEvent(ExpressionAssay(), {
     req(ExpressionAssay())
     showNotification("The expression assay has been created", duration = 5, type = "message")
-    message(paste0("> Heatmap expression assay successfully created ! (", nrow(ExpressionAssay()), " genes selected)"))
+    message(paste0("> Heatmap expression assay successfully created ! (", 
+                   nrow(ExpressionAssay()), " genes selected)"))
   })
   
   #### Annotation data      -----------------------------------------------------------
@@ -928,7 +1061,7 @@ server <- function(input, output, session){
                         col = setNames(list(col1),
                                        c(input$Sel.HmAnnot)),
                         annotation_name_side = "left",
-                        annotation_name_gp = list(fontsize = 13,
+                        annotation_name_gp = list(fontsize = 14,
                                                   col = "navy",
                                                   fontface = "bold"),
                         annotation_legend_param = list(grid_height = unit(0.9,"cm"),
@@ -950,7 +1083,7 @@ server <- function(input, output, session){
                                        c(input$Sel.HmAnnot[1],
                                          input$Sel.HmAnnot[2])),
                         annotation_name_side = "left",
-                        annotation_name_gp = list(fontsize = 13,
+                        annotation_name_gp = list(fontsize = 14,
                                                   col = "navy",
                                                   fontface = "bold"),
                         annotation_legend_param = list(grid_height = unit(0.9,"cm"),
@@ -975,7 +1108,7 @@ server <- function(input, output, session){
                                          input$Sel.HmAnnot[2],
                                          input$Sel.HmAnnot[3])),
                         annotation_name_side = "left",
-                        annotation_name_gp = list(fontsize = 13,
+                        annotation_name_gp = list(fontsize = 14,
                                                   col = "navy",
                                                   fontface = "bold"),
                         annotation_legend_param = list(grid_height = unit(0.9,"cm"),
@@ -985,14 +1118,18 @@ server <- function(input, output, session){
                                                        title_gp = gpar(col = "darkred",
                                                                        fontsize = 13,
                                                                        fontface = "bold")))
-      
-      warning("NOTE: 3 variables is a maximum possible to annotate with, any more would be ignored !")
     }
   })
   
   observeEvent(TopAnnotation(), {
-    req(TopAnnotation())
+    req(TopAnnotation(), hm.metadata())
+    hm.metadata <- hm.metadata()
     message("> Heatmap top-annotation is ready !")
+    showNotification("Top-annotation DONE !", type = "message")
+    if(ncol(hm.metadata) >= 3){
+      warning("NOTE: 3 variables is a maximum possible to annotate with, any more would be ignored !")
+    }
+    
   })
   
   ##### Right annot       ---------------------------------------------------------
@@ -1002,13 +1139,21 @@ server <- function(input, output, session){
     dea.res <- DEA_results()
     rowAnnotation(
       "log2fc" = anno_barplot(dea.res$avg_log2FC[which(dea.res$Genes %in% rownames(exp))],
-                              axis = T, border = T, cex = 1, bar_width = 1)
+                              axis = T, border = T, cex = 1, bar_width = 1),
+      width = unit(1.5, units = "cm")
     )
   })
   
   observeEvent(RightAnnotation(), {
     req(RightAnnotation())
     message("> Heatmap right-annotation is ready !")
+    showNotification("Right-annotation DONE !", type = "message")
+  })
+  
+  # Update text-info:
+  observeEvent(input$Setup.hm, {
+    req(RightAnnotation(), TopAnnotation())
+    hm.text_info("Heatmap is now ready to be plotted ! Click the bottom below")
   })
   
   #### Plot heatmap       ---------------------------------------------------------
@@ -1042,7 +1187,9 @@ server <- function(input, output, session){
                             row_names_gp = gpar(fontface = "bold",
                                                 fontsize = 12,
                                                 col = "darkred"),
-                            column_title = paste0("Expression of ",nrow(exp), " genes across ", ncol(meta), " condition(s)"),
+                            column_title = paste0("Expression of ",
+                                                  nrow(exp), " genes across ", 
+                                                  ncol(meta), " condition(s)"),
                             heatmap_legend_param = list(legend_height = unit(3,"cm"),
                                                         direction = "horizontal",
                                                         legend_width = unit(7,"cm"),
@@ -1052,7 +1199,7 @@ server <- function(input, output, session){
                                                         label_gp = gpar(fontsize=10, col="black"),
                                                         legend_gp = gpar(fontsize=10)),
                             column_title_gp = gpar(col = "darkred",
-                                                   fontsize = 15,
+                                                   fontsize = 17,
                                                    fontface = "bold"))
     
   })
@@ -1066,9 +1213,109 @@ server <- function(input, output, session){
     req(hm())
     hm <- hm()
     ComplexHeatmap::draw(hm, heatmap_legend_side = "bottom")
-  }, width = 900, height = 700)
+  }, width = 800, height = 700)
+  
+  # Saving parameters:
+  observeEvent(input$download.hmplot, {
+    showModal(
+      modalDialog(
+        title = "Save Heatmap as PDF",
+        numericInput("width_hmplot", "Width (in inches):", value = 6, min = 4, step = 0.5),
+        numericInput("height_hmplot", "Height (in inches):", value = 8, min = 4, step = 0.5),
+        textInput("hmplot_name", "Filename:", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          downloadButton("download.hmplot.modal", "Download", class = "btn-success")
+        )
+      )
+    )
+  })
   
   
+  # IV- Markers inspections      ---------------------------------------------------
+  
+  ## 1- Displaying the genes    ----------------------------------------------------
+  output$genes1 <- renderPrint({
+    req(input$show_upgenes)
+    Up_Genes <- Up_Genes()
+    if(input$show_upgenes == "All"){
+      cat(Up_Genes, sep = " | ")
+      
+    } else if(input$show_upgenes == "Top10"){
+      cat(head(Up_Genes, 10), sep = " | ")
+      
+    } else if(input$show_upgenes == "Top50"){
+      cat(head(Up_Genes, 50), sep = " | ")
+    }  
+  })
+  
+  output$genes2 <- renderPrint({
+    req(input$show_downgenes)
+    Down_Genes <- Down_Genes()
+    if(input$show_downgenes == "All"){
+      cat(Down_Genes, sep = " | ")
+      
+    } else if(input$show_downgenes == "Top10"){
+      cat(head(Down_Genes, 10), sep = " | ")
+      
+    } else if(input$show_downgenes == "Top50"){
+      cat(head(Down_Genes, 50), sep = " | ")
+    }  
+  })
+  
+  ## 2- Fill the cumulative list of markers     -----------------------------------
+  
+  # Initiate the cumulative list:
+  List_markers <- reactiveVal(list())
+  
+  # Fill the list:
+  observeEvent(input$add.markers, {
+    req(DEA_results())
+    
+    res <- DEA_results()
+    fc <- res[["avg_log2FC"]] %>% setNames(res[["Genes"]])
+    
+    tmp_list <- list(
+      Up = Up_Genes(),
+      Down = Down_Genes(),
+      All = c(Up_Genes(), Down_Genes()),
+      All_FC = fc
+    )
+    
+    current_list <- List_markers()
+    current_list[[input$name.list]] <- tmp_list
+    List_markers(current_list)
+    
+    showNotification(paste0(input$name.list, " added to the list"), type = "message", duration = 10)
+  })
+  
+  output$list_markers <- renderPrint({
+    str(List_markers())
+  })
+  
+  # Clear the list:
+  observeEvent(input$ac, {
+    if(length(List_markers()) == 0){
+      showNotification("The list is already empty.", type = "error")
+    } else {
+      showModal(
+        modalDialog(
+          title = "Confirm Action",
+          "Are you sure you want to clear the list of markers?",
+          footer = tagList(
+            modalButton("Cancel"),
+            actionButton("confirm_clear", "Yes, clear it!", class = "btn-danger")
+          )
+        )
+      )
+    }
+  })
+  
+  observeEvent(input$confirm_clear, {
+    removeModal()
+    List_markers(list())
+    showNotification("The list of markers has been cleared.", type = "warning")
+  })
   
   
   
@@ -1146,6 +1393,23 @@ server <- function(input, output, session){
     }
   )
   
+  # Heatmap plot:
+  output$download.hmplot.modal <- downloadHandler(
+    filename = function(){paste0(input$hmplot_name,".pdf")},
+    content = function(file){
+      pdf(file, width = input$width_hmplot, height = input$height_hmplot)
+      hm <- hm()
+      
+      ComplexHeatmap::draw(hm, heatmap_legend_side = "bottom")
+      dev.off()
+    }
+  )
+  
+  # List of markers:
+  output$download.markers <- downloadHandler(
+    filename = function() {paste0("Markers-",Sys.Date(),".rds")},
+    content = function(file) {saveRDS(List_markers(), file)}
+  )
   
 }
 
