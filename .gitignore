@@ -1,10 +1,5 @@
 README.md
 tmp.R
-<<<<<<< HEAD
-Library1/
-Library2/
-Library3/
-=======
 Library1/Out_figures/
 Library1/Out_objects/
 Library1/SeuratObjects/
@@ -20,4 +15,4 @@ Library3/Out_objects/
 Library3/SeuratObjects/
 Library3/Lib3_processing.html
 Library3/Lib3_processing.Rmd
->>>>>>> B1
+
