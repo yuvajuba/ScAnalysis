@@ -1,14 +1,5 @@
 README.md
 tmp.R
-Library1/Out_figures/
-Library1/Out_objects/
-Library1/SeuratObjects/
-Library1/Lib1_processing.html
-Library2/Out_figures/
-Library2/Out_objects/
-Library2/SeuratObjects/
-Library2/Lib2_processing.html
-Library3/Out_figures/
-Library3/Out_objects/
-Library3/SeuratObjects/
-Library3/Lib3_processing.html
+Library1/
+Library2/
+Library3/
