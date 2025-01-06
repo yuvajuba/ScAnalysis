@@ -68,7 +68,12 @@ extract_term_genes <- function(object, goID){
 }
 
 
-Display_Venn <- function(Markers, colpalette = NULL, set.names = NULL) {
+Display_Venn <- function(Markers, 
+                         colpalette = NULL, 
+                         set.names = NULL, 
+                         set.name.size = 5,
+                         text.size = 5,
+                         Padding = 0.03) {
   
   # package install checking
   pkgs <- c("ggvenn","purrr")
@@ -153,7 +158,7 @@ Display_Venn <- function(Markers, colpalette = NULL, set.names = NULL) {
     x <- combn(sets, i, simplify = F)
     for(s in 1:length(x)){
       if(i == 2){
-        specific_genes[[paste(names(x[[s]]), collapse = " or ")]] <- setNames(list(setdiff(x[[s]][[1]], 
+        specific_genes[[paste(names(x[[s]]), collapse = " | ")]] <- setNames(list(setdiff(x[[s]][[1]], 
                                                                                            intersect(x[[s]][[1]], 
                                                                                                      x[[s]][[2]])),
                                                                                    setdiff(x[[s]][[2]], 
@@ -164,7 +169,7 @@ Display_Venn <- function(Markers, colpalette = NULL, set.names = NULL) {
       }
       
       if(i == 3){
-        specific_genes[[paste(names(x[[s]]), collapse = " or ")]] <- setNames(list(setdiff(x[[s]][[1]], 
+        specific_genes[[paste(names(x[[s]]), collapse = " | ")]] <- setNames(list(setdiff(x[[s]][[1]], 
                                                                                            union(x[[s]][[2]], 
                                                                                                  x[[s]][[3]])),
                                                                                    setdiff(x[[s]][[2]], 
@@ -215,10 +220,10 @@ Display_Venn <- function(Markers, colpalette = NULL, set.names = NULL) {
     show_elements = F,
     stroke_linetype = "solid",
     set_name_color = colpalette,
-    set_name_size = 5,
+    set_name_size = set.name.size,
     text_color = "black",
-    text_size = 5,
-    padding = 0.03, 
+    text_size = text.size,
+    padding = Padding, 
     show_stats = "c", 
     fill_alpha = 0.4
   )
@@ -703,7 +708,56 @@ ui <- fluidPage(
                         choices = c("Up genes","Down genes","All genes"), inline = F, selected = ""),
            actionButton("display_venn", "Display Venn diagram", class = "btn-sm", width = "90%",
                         style = "font-size:18px; background-color:midnightblue; font-weight:600; margin-bottom:30px;
-                        border-radius:10px; margin-top:10px; border-color:cadetblue"))
+                        border-radius:10px; margin-top:10px; border-color:cadetblue")),
+    column(width = 8,
+           offset = 1,
+           div(
+             style = "margin-top:20px; margin-bottom:30px",
+             tags$span(
+               style = "font-size:120%; font-weight:600; color:darkgreen; border-bottom:4px solid darkred; margin-bottom:20px",
+               "Venn plot:"
+             )
+           ),
+           column(width = 4,
+                  numericInput("vplot.setname.size", "Set name size", value = 7, width = "150px")),
+           column(width = 4,
+                  numericInput("vplot.text.size", "Text size", value = 7, width = "150px")),
+           column(width = 4,
+                  numericInput("vplot.padding", "Padding", value = 0.03, step = 0.01, width = "150px")),
+           div(
+             style = "overflow-x:auto; width:100%; margin-top:20px",
+             plotOutput("vennplot", height = "auto")
+           ),
+           div(
+             style = "margin-top:30px; margin-bottom:30px",
+             actionButton("download.vplot", "Download as pdf",
+                          class = "btn-sm", icon = icon("download"),
+                          style = "font-size:20px ; background-color:darkgreen ; 
+                                padding:5px 150px ; border-radius:10px")
+           ),
+           div(
+             style = "margin-top:20px; margin-bottom:20px",
+             tags$span(
+               style = "font-size:120%; font-weight:600; color:darkgreen; 
+             border-bottom:4px solid darkred; margin-top:20px; margin-bottom:20px",
+             "Common genes:"
+             )
+           ),
+           selectInput("sel.intersection", "Select you intersection", choices = c(), width = "650px"),
+           verbatimTextOutput("nb_common_genes"),
+           verbatimTextOutput("common_genes"),
+           div(
+             style = "margin-top:30px; margin-bottom:20px",
+             tags$span(
+               style = "font-size:120%; font-weight:600; color:darkgreen; 
+             border-bottom:4px solid darkred; margin-top:20px; margin-bottom:20px",
+             "Group-specific genes:"
+             )
+           ),
+           selectInput("specific.genes", "Select the contrast", choices = c(), width = "650px"),
+           selectInput("specific.genes2", "Select the condition", choices = c(), width = "650px"),
+           verbatimTextOutput("nb_genes"),
+           verbatimTextOutput("specific_genes"))
   )
 )
 
@@ -1317,6 +1371,113 @@ server <- function(input, output, session){
     showNotification("The list of markers has been cleared.", type = "warning")
   })
   
+  ## 3- VennDiagram plot     -----------------------------------------------
+  
+  # Update selectinput:
+  observeEvent(List_markers(), {
+    req(List_markers())
+    List_markers <- List_markers()
+    updateSelectInput(session, "sel.markers.list", choices = names(List_markers))
+  })
+  
+  # Venn Object:
+  Venn_obj <- eventReactive(input$display_venn, {
+    req(List_markers())
+    List_markers <- List_markers()
+    genes <- switch(input$up_down,
+                    "Up genes" = "Up",
+                    "Down genes" = "Down",
+                    "All genes" = "All")
+    sets <- list()
+    for(set in input$sel.markers.list){sets[[set]] <- List_markers[[set]][[genes]]}
+    Display_Venn(sets, 
+                 set.names = input$sel.markers.list, 
+                 colpalette = MyPalette,
+                 Padding = input$vplot.padding,
+                 text.size = input$vplot.text.size,
+                 set.name.size = input$vplot.setname.size)
+  })
+  
+  # Venn Plot:
+  Venn_plot <- eventReactive(Venn_obj(), {
+    req(Venn_obj())
+    Venn_obj <- Venn_obj()
+    Venn_obj[["plot"]]
+  })
+  
+  output$vennplot <- renderPlot({
+    req(Venn_plot())
+    Venn_plot()
+  }, height = 600, width = 700)
+  
+  # Saving parameters:
+  observeEvent(input$download.vplot, {
+    showModal(
+      modalDialog(
+        title = "Save VennPlot as PDF",
+        numericInput("width_vplot", "Width (in inches):", value = 6, min = 4, step = 0.5),
+        numericInput("height_vplot", "Height (in inches):", value = 8, min = 4, step = 0.5),
+        textInput("vplot_name", "Filename:", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          downloadButton("download.vplot.modal", "Download", class = "btn-success")
+        )
+      )
+    )
+  })
+  
+  ## 4- Common & group-specific genes     ----------------------------------------
+  
+  # Update selection inputs:
+  observeEvent(Venn_obj(), {
+    req(Venn_obj())
+    Venn_obj <- Venn_obj()
+    
+    updateSelectInput(session, "sel.intersection", 
+                      choices = names(Venn_obj[["intersections"]]), selected = "")
+    updateSelectInput(session, "specific.genes", 
+                      choices = names(Venn_obj[["group_specific"]]), selected = "")
+  })
+  
+  observeEvent(input$specific.genes, {
+    req(Venn_obj())
+    Venn_obj <- Venn_obj()
+    
+    updateSelectInput(session, "specific.genes2", 
+                      choices = names(Venn_obj[["group_specific"]][[input$specific.genes]]), 
+                      selected = "")
+  })
+  
+  # Display common genes:
+  output$nb_common_genes <- renderPrint({
+    req(Venn_obj())
+    Venn_obj <- Venn_obj()
+    print(length(Venn_obj[["intersections"]][[input$sel.intersection]]))
+  })
+  
+  output$common_genes <- renderPrint({
+    req(Venn_obj())
+    Venn_obj <- Venn_obj()
+    print(Venn_obj[["intersections"]][[input$sel.intersection]])
+  })
+  
+  # Display group-specific genes:
+  output$nb_genes <- renderPrint({
+    req(Venn_obj())
+    Venn_obj <- Venn_obj()
+    print(length(Venn_obj[["group_specific"]][[input$specific.genes]][[input$specific.genes2]]))
+  })
+  
+  output$specific_genes <- renderPrint({
+    req(Venn_obj())
+    Venn_obj <- Venn_obj()
+    print(Venn_obj[["group_specific"]][[input$specific.genes]][[input$specific.genes2]])
+  })
+  
+  
+  
+  
+  
   
   
   # X- Downloading      -----------------------------------------------------------
@@ -1410,6 +1571,18 @@ server <- function(input, output, session){
     filename = function() {paste0("Markers-",Sys.Date(),".rds")},
     content = function(file) {saveRDS(List_markers(), file)}
   )
+  
+  # VennDiagram plot:
+  output$download.vplot.modal <- downloadHandler(
+    filename = function(){paste0(input$vplot_name,".pdf")},
+    content = function(file){
+      pdf(file, width = input$width_vplot, height = input$height_vplot)
+      print(Venn_plot())
+      dev.off()
+    }
+  )
+  
+  
   
 }
 
