@@ -1,10 +1,11 @@
 #   Setting     #################
 library(Seurat)
+library(yulab.utils)
 library(dplyr)
 library(ggplot2)
 library(tibble)
 library(writexl)
-# library(clusterProfiler)
+library(clusterProfiler)
 library(org.Hs.eg.db)
 library(AnnotationDbi)
 library(enrichplot)
@@ -159,28 +160,28 @@ Display_Venn <- function(Markers,
     for(s in 1:length(x)){
       if(i == 2){
         specific_genes[[paste(names(x[[s]]), collapse = " | ")]] <- setNames(list(setdiff(x[[s]][[1]], 
-                                                                                           intersect(x[[s]][[1]], 
-                                                                                                     x[[s]][[2]])),
-                                                                                   setdiff(x[[s]][[2]], 
-                                                                                           intersect(x[[s]][[1]], 
-                                                                                                     x[[s]][[2]]))),
-                                                                              c(names(x[[s]][1]), 
-                                                                                names(x[[s]][2])))
+                                                                                          intersect(x[[s]][[1]], 
+                                                                                                    x[[s]][[2]])),
+                                                                                  setdiff(x[[s]][[2]], 
+                                                                                          intersect(x[[s]][[1]], 
+                                                                                                    x[[s]][[2]]))),
+                                                                             c(names(x[[s]][1]), 
+                                                                               names(x[[s]][2])))
       }
       
       if(i == 3){
         specific_genes[[paste(names(x[[s]]), collapse = " | ")]] <- setNames(list(setdiff(x[[s]][[1]], 
-                                                                                           union(x[[s]][[2]], 
-                                                                                                 x[[s]][[3]])),
-                                                                                   setdiff(x[[s]][[2]], 
-                                                                                           union(x[[s]][[1]], 
-                                                                                                 x[[s]][[3]])),
-                                                                                   setdiff(x[[s]][[3]], 
-                                                                                           union(x[[s]][[2]], 
-                                                                                                 x[[s]][[1]]))),
-                                                                              c(names(x[[s]][1]), 
-                                                                                names(x[[s]][2]), 
-                                                                                names(x[[s]][3])))
+                                                                                          union(x[[s]][[2]], 
+                                                                                                x[[s]][[3]])),
+                                                                                  setdiff(x[[s]][[2]], 
+                                                                                          union(x[[s]][[1]], 
+                                                                                                x[[s]][[3]])),
+                                                                                  setdiff(x[[s]][[3]], 
+                                                                                          union(x[[s]][[2]], 
+                                                                                                x[[s]][[1]]))),
+                                                                             c(names(x[[s]][1]), 
+                                                                               names(x[[s]][2]), 
+                                                                               names(x[[s]][3])))
       }
       
       if(i == 4){
@@ -400,13 +401,17 @@ ui <- fluidPage(
     column(width = 9,
            navbarPage(
              title = tags$span(
-               style = "color:gold ; font-weight:600",
+               style = "color:gold ; font-weight:600 ; font-size:120%",
                "DEA Results"
-             ),
+             ), 
+             collapsible = T,
              
              #### p1: Datatable     ----------------------------------------------
              tabPanel(
-               "Table",
+               tags$span(
+                 style = "color:white ; font-weight:600 ; font-size:120%",
+                 "Table"
+               ),
                fluidRow(
                  dataTableOutput("tab2"),
                  div(
@@ -420,7 +425,10 @@ ui <- fluidPage(
              
              #### p2: Bar plot    ----------------------------------------------------
              tabPanel(
-               "BarPlot",
+               tags$span(
+                 style = "color:white ; font-weight:600 ; font-size:120%",
+                 "BarPlot"
+               ),
                fluidRow(
                  column(width = 3,
                         div(
@@ -462,7 +470,10 @@ ui <- fluidPage(
              
              #### p3: Dot plot   ----------------------------------------------------
              tabPanel(
-               "DotPlot",
+               tags$span(
+                 style = "color:white ; font-weight:600 ; font-size:120%",
+                 "DotPlot"
+               ),
                fluidRow(
                  column(width = 4,
                         div(
@@ -527,7 +538,10 @@ ui <- fluidPage(
              
              #### p4: Heatmap   -----------------------------------------------------
              tabPanel(
-               "Heatmap",
+               tags$span(
+                 style = "color:white ; font-weight:600 ; font-size:120%",
+                 "Heatmap"
+               ),
                fluidRow(
                  div(
                    style = "margin-bottom:10px",
@@ -758,6 +772,102 @@ ui <- fluidPage(
            selectInput("specific.genes2", "Select the condition", choices = c(), width = "650px"),
            verbatimTextOutput("nb_genes"),
            verbatimTextOutput("specific_genes"))
+  ),
+  
+  ## V- PEA   ---------------------------------------------------------
+  h1("V- Enrichment Analysis",
+     style = "color:gold ; font-weight:700 ; background-color:black ; margin-top:200px ; margin-bottom:20px"),
+  p("Now we will apply an enrichment analysis on an individual set of markers and on a group of sets to 
+    compare between them, from the list of genes filled above.",
+    style = "font-size:130% ; font-weight:600 ; color:navy ; margin-bottom:20px"),
+  
+  ### 1- Individual Enrichment Analysis     -----------------------------------
+  p("1- Individual analysis",
+    style = "color:darkred ; font-weight:600 ; font-size:160% ; background-color:gold ; 
+    margin-bottom:10px ; margin-top:30px"),
+  
+  #### 1-1- GO     -----------------------------------------------------------
+  p("1-1 Pathway Enrichment Analysis",
+    style = "color:white ; font-weight:600 ; font-size:150% ; background-color:red ; 
+    margin-bottom:10px ; margin-top:10px"),
+  p("For PEA, we'll use the GO database to map the terms with the genes",
+    style = "font-size:120% ; font-weight:600 ; color:black ; margin-bottom:20px"),
+  
+  navbarPage(
+    title = tags$span(
+      style = "color:gold ; font-weight:600 ; font-size:120%",
+      "GO results"
+    ), 
+    collapsible = T,
+    
+    ##### p1: Datatable       ------------------------------------------------
+    tabPanel(
+      tags$span(
+        style = "color:white ; font-weight:600 ; font-size:120%",
+        "Table"
+      ),
+      
+      fluidRow(
+        column(width = 3,
+               selectInput("go.list.genes", "Select gene list", choices = c(), width = "200px"),
+               selectInput("go.list.genes.reg", "Select the regulation", choices = c("Up","Down","All"), width = "200px"),
+               selectInput("go.keytype", "Key Type", choices = c("SYMBOL","ENTREZID","ENSEMBL"), width = "200px"),
+               selectInput("go.ont", "Ontology", choices = c("BP","MF", "CC"), selected = "BP", width = "200px"),
+               sliderInput("go.maxgeneset", "Limit the geneset size", value = 500,
+                           min = 500, max = 10000, step = 200, width = "300px"),
+               actionButton("run.go", "Run GO analysis", class = "btn-sm", width = "90%",
+                            style = "font-size:18px; background-color:midnightblue; font-weight:600; margin-bottom:30px;
+                            border-radius:10px; margin-top:10px; border-color:cadetblue")),
+        column(width = 9,
+               dataTableOutput("tab3"),
+               div(
+                 style = "margin-top:20px; margin-bottom:40px",
+                 downloadButton("download.tab.go","Download as excel", class = "btn-sm",
+                                style = "font-size:20px ; background-color:darkgreen ; 
+                                padding:5px 150px ; border-radius:10px")
+               ),
+               column(width = 4,
+                      actionLink("addgo", "click to save the result into a list for a comparative analysis",
+                                 icon = icon("hand-point-right"), 
+                                 style = "font-size:120%; font-weight:600"),
+                      p("", style = "margin-bottom:30px"),
+                      actionLink("clear.go.list", "Clear the list", icon = icon("eraser"),
+                                 style = "font-size:120%; font-weight:600; color:darkred")),
+               column(width = 6,
+                      offset = 1,
+                      verbatimTextOutput("showGOobj", placeholder = T)))
+      )
+    ),
+    
+    ##### p2: Dot plot        --------------------------------------------------
+    tabPanel(
+      tags$span(
+        style = "color:white ; font-weight:600 ; font-size:120%",
+        "DotPlot"
+      ),
+      
+      fluidRow(
+        column(width = 4,
+               div(
+                 style = "margin-bottom:40px",
+                 selectInput("dotplot.show.cat", "Select terms", choices = c(), 
+                             size = 20, multiple = T, selectize = F, width = "400px"),
+                 verbatimTextOutput("dotp_selected_terms", placeholder = T)
+               ),
+               actionButton("go.dotplot", "Plot Dotplot", class = "btn-sm", width = "90%",
+                            style = "font-size:18px; background-color:midnightblue; font-weight:600; margin-bottom:30px;
+                            border-radius:10px; margin-top:10px; border-color:cadetblue")),
+        column(width = 8,
+               plotOutput("plt6"),
+               div(
+                 style = "margin-top:30px ; margin-bottom:30px",
+                 actionButton("download.go.dplot","Download as pdf", 
+                              class = "btn-sm", icon = icon("download"),
+                              style = "font-size:20px ; background-color:darkgreen ; 
+                                padding:5px 150px ; border-radius:10px")
+               ))
+      )
+    )
   )
 )
 
@@ -858,16 +968,16 @@ server <- function(input, output, session){
   ## 2- Setting the parameters      ------------------------------------------------
   observeEvent(input$act2, {
     showNotification("DEA is running >>> ", duration = 5, type = "message")
-    message("==============================================")
-    message("DEA is running with the following parameters: ")
-    message("==============================================")
+    message("==========================================")
+    message("> DEA is running with the following parameters: ")
+    message("==========================================")
     message(sprintf("%-25s: %s", "Selected metadata", input$Sel.metadata))
     message(sprintf("%-25s: %s", "Ident.1", input$ident.1))
     message(sprintf("%-25s: %s", "Ident.2", input$ident.2))
     message(sprintf("%-25s: %s", "Min.log2FC.threshold", input$log2fc))
     message(sprintf("%-25s: %s", "Min.pct.threshold", input$min.pct))
     message(sprintf("%-25s: %s", "Min.diff.pct", input$min.diff.pct))
-    message("==============================================")
+    message("==========================================")
   })
   
   observeEvent(input$log2fc, {
@@ -910,13 +1020,13 @@ server <- function(input, output, session){
     res <- DEA_results()
     max_fc <- max(res[["avg_log2FC"]])
     min_fc <- min(res[["avg_log2FC"]])
-    message("______________________________________________________")
-    message("Analysis completed successfully !!!")
-    message("==============================================")
+    message("__________________________________________")
+    message("> DE Analysis completed successfully !!!")
+    message("==========================================")
     message(sprintf("%-25s: %s", "Total Nb of DEGs", nrow(res)))
     message(sprintf("%-25s: %s", "Nb of Up genes", nrow(res[which(res$avg_log2FC > 0),])))
     message(sprintf("%-25s: %s", "Nb of Down genes", nrow(res[which(res$avg_log2FC < 0),])))
-    message("==============================================")
+    message("==========================================")
     updateSliderInput(session, "log2fc_up", value = c(input$log2fc, max_fc))
     updateSliderInput(session, "log2fc_down", value = c(min_fc, -(input$log2fc)))
     # Fill the initiated vectors:
@@ -1475,6 +1585,142 @@ server <- function(input, output, session){
   })
   
   
+  # V- PEA      ---------------------------------------------------------------
+  
+  # Initiate a list to store GO objects:
+  List_GO <- reactiveVal(list())
+  
+  # Upload list of saved markers:
+  observeEvent(List_markers(), {
+    req(List_markers())
+    List_markers <- List_markers()
+    updateSelectInput(session, "go.list.genes", choices = names(List_markers))
+  })
+  
+  ## 1- Individual enrichment     ---------------------------------------------
+  
+  ### 1-1- GO analysis          --------------------------------------------
+  
+  # Run GO analysis:
+  GOobject <- eventReactive(input$run.go, {
+    req(List_markers())
+    List_markers <- List_markers()
+    MyGenes <- List_markers[[input$go.list.genes]][[input$go.list.genes.reg]]
+    enrichGO(gene = MyGenes,
+             OrgDb = org.Hs.eg.db,
+             keyType = input$go.keytype,
+             ont = input$go.ont,
+             qvalueCutoff = 0.1,
+             pvalueCutoff = 0.05,
+             readable = T,
+             maxGSSize = input$go.maxgeneset,
+             minGSSize = 10)
+  })
+  
+  observeEvent(input$run.go, {
+    showNotification("GO is running ...", duration = 10, type = "message")
+    message(paste0("> Running GO analysis on ... ", input$go.list.genes, "_", input$go.list.genes.reg))
+  })
+  
+  observeEvent(GOobject(), {
+    req(GOobject())
+    GOobject <- GOobject()
+    showNotification("GO analysis completed !", duration = 5, type = "message")
+    message("> GO analysis completed successfully !!!")
+    message("==========================================")
+    message(sprintf("%-25s: %s", "Total Nb of terms found", nrow(GOobject@result)))
+    
+  })
+  
+  # Add the GO object to the list:
+  observeEvent(input$addgo, {
+    req(GOobject())
+    current_list <- List_GO()
+    contrast_name <- paste0("GOobj_",input$go.list.genes,"_",input$go.list.genes.reg)
+    if(contrast_name %in% names(current_list)){
+      showNotification(paste0("The contrast ", contrast_name, " already exists in the list!"), 
+                       type = "warning")
+    } else {
+      current_list[[contrast_name]] <- GOobject()
+      List_GO(current_list)
+      showNotification(paste0("GO analysis for ", contrast_name, " added to the list!"), type = "message")
+    }
+  })
+  
+  output$showGOobj <- renderPrint({
+    req(List_GO())
+    List_GO <- List_GO()
+    if(length(List_GO) > 0){
+      for(i in names(List_GO)){
+        print(i)
+      }
+    }
+  })
+  
+  # Clear the list:
+  observeEvent(input$clear.go.list, {
+    if(length(List_GO()) == 0){
+      showNotification("The list is already empty.", type = "error")
+    } else {
+      showModal(
+        modalDialog(
+          title = "Confirm Action",
+          "Are you sure you want to clear this list?",
+          footer = tagList(
+            modalButton("Cancel"),
+            actionButton("confirm_clear.go", "Yes, clear it!", class = "btn-danger")
+          )
+        )
+      )
+    }
+  })
+  
+  observeEvent(input$confirm_clear.go, {
+    removeModal()
+    List_GO(list())
+    showNotification("The list of GO objects is now empty.", type = "warning")
+  })
+  
+  #### p1: Result table     ---------------------------------------------------------
+  go.tab <- eventReactive(GOobject(), {
+    req(GOobject())
+    GOobject <- GOobject()
+    GOobject@result %>% 
+      dplyr::filter(p.adjust < 0.05) %>% 
+      dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+      dplyr::select(ID, Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID)
+  })
+  
+  observeEvent(go.tab(), {
+    req(go.tab())
+    go.tab <- go.tab()
+    message(sprintf("%-25s: %s", "Nb of significant term", nrow(go.tab)))
+    
+    # Updating terms lists:
+    updateSelectInput(session, "dotplot.show.cat", choices = go.tab[["Description"]])
+    # updateSelectInput(session, "go.cnet.sel", choices = go.results[["Description"]])
+    # updateSelectInput(session, "terms_corrplot", choices = go.results[["Description"]], selected = "ward.D")
+    # updateSelectInput(session, "terms_treeplot", choices = go.results[["Description"]], selected = "ward.D")
+  })
+  
+  output$tab3 <- renderDataTable({
+    req(go.tab())
+    go.tab() %>% 
+      dplyr::select(ID, Description, GeneRatio, BgRatio, RichFactor, p.adjust) %>% 
+      datatable(options = list(pageLength = 5, scrollX = TRUE))
+  })
+  
+  #### p2: Dot plot   ----------------------------------------------------------
+  
+  # Selected terms:
+  output$dotp_selected_terms <- renderPrint({
+    
+  })
+  
+  
+  
+  
+  
   
   
   
@@ -1582,6 +1828,11 @@ server <- function(input, output, session){
     }
   )
   
+  # GO data table:
+  output$download.tab.go <- downloadHandler(
+    filename = function(){paste0("GO_res_", input$go.list.genes,"_", input$go.list.genes.reg,".xlsx")},
+    content = function(file){write_xlsx(go.tab(), path = file)}
+  )
   
   
 }
