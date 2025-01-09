@@ -804,7 +804,7 @@ ui <- fluidPage(
     tabPanel(
       tags$span(
         style = "color:white ; font-weight:600 ; font-size:120%",
-        "Table"
+        "Run GO"
       ),
       
       fluidRow(
@@ -835,7 +835,9 @@ ui <- fluidPage(
                                  style = "font-size:120%; font-weight:600; color:darkred")),
                column(width = 6,
                       offset = 1,
-                      verbatimTextOutput("showGOobj", placeholder = T)))
+                      verbatimTextOutput("showGOobj", placeholder = T),
+                      downloadButton("dwnload.GoObjList", "Download the list", class = "btn-sm btn-success", 
+                                     style = "font-size:14px; border-radius:10px; padding:5px 50px; font-weight:600")))
       )
     ),
     
@@ -855,16 +857,60 @@ ui <- fluidPage(
                  verbatimTextOutput("dotp_selected_terms", placeholder = T)
                ),
                actionButton("go.dotplot", "Plot Dotplot", class = "btn-sm", width = "90%",
-                            style = "font-size:18px; background-color:midnightblue; font-weight:600; margin-bottom:30px;
-                            border-radius:10px; margin-top:10px; border-color:cadetblue")),
+                            style = "font-size:18px; background-color:midnightblue; font-weight:600; margin-bottom:40px;
+                            border-radius:10px; margin-top:20px; border-color:cadetblue")),
         column(width = 8,
-               plotOutput("plt6"),
+               div(
+                 style = "overflow-x:auto; width:100%; margin-top:10px",
+                 plotOutput("plt6", height = "auto")
+               ),
                div(
                  style = "margin-top:30px ; margin-bottom:30px",
                  actionButton("download.go.dplot","Download as pdf", 
                               class = "btn-sm", icon = icon("download"),
                               style = "font-size:20px ; background-color:darkgreen ; 
                                 padding:5px 150px ; border-radius:10px")
+               ))
+      )
+    ),
+    
+    ##### p3: Correlation plot        --------------------------------------------------
+    tabPanel(
+      tags$span(
+        style = "color:white ; font-weight:600 ; font-size:120%",
+        "CorrPlot"
+      ),
+      p("A correlation score between the terms is calculated using Jaccard's similarity 
+        index (JC). A hierarchical clustering will be then made using that JC scores, and 
+        also for the clustering, several method can be applied !",
+        style = "font-weight:600 ; color:darkgreen ; margin-top:20px ; margin-bottom:30px"),
+      
+      fluidRow(
+        column(width = 4,
+               div(
+                 style = "margin-bottom:20px",
+                 selectInput("corrplot.show.cat", "Select terms", choices = c(), 
+                             size = 20, multiple = T, selectize = F, width = "400px"),
+                 verbatimTextOutput("corrp_selected_terms", placeholder = T)
+               ),
+               div(
+                 style = "margin-bottom:40px",
+                 selectInput("corr.methode", "Correlation method",
+                             choices = c("circle","square","ellipse","number","shade","color","pie"),
+                             selected = "circle"),
+                 selectInput("corr.hclust","Select clustering method",
+                             choices = c("ward", "ward.D", "ward.D2", "single", "average", "median", "centroid"),
+                             selected = "ward.D"),
+                 numericInput("tl.cex", "Labels size", value = 0.8, step = 0.1, width = "150px"),
+                 numericInput("tl.srt", "Labels rotation", value = 45, step = 5, min = 0, max = 90, width = "150px")
+               ),
+               actionButton("go.corrplot", "Plot Corrplot", class = "btn-sm", width = "90%",
+                            style = "font-size:18px; background-color:midnightblue; font-weight:600; margin-bottom:40px;
+                            border-radius:10px; margin-top:20px; border-color:cadetblue")),
+        column(width = 8,
+               div(
+                 style = "overflow-x:auto; width:100%; margin-top:10px",
+                 plotOutput("plt.corrplot", height = "700px")
                ))
       )
     )
@@ -1649,12 +1695,8 @@ server <- function(input, output, session){
   
   output$showGOobj <- renderPrint({
     req(List_GO())
-    List_GO <- List_GO()
-    if(length(List_GO) > 0){
-      for(i in names(List_GO)){
-        print(i)
-      }
-    }
+    List_GO <- names(List_GO())
+    cat(List_GO, sep = "\n")
   })
   
   # Clear the list:
@@ -1698,9 +1740,9 @@ server <- function(input, output, session){
     
     # Updating terms lists:
     updateSelectInput(session, "dotplot.show.cat", choices = go.tab[["Description"]])
-    # updateSelectInput(session, "go.cnet.sel", choices = go.results[["Description"]])
-    # updateSelectInput(session, "terms_corrplot", choices = go.results[["Description"]], selected = "ward.D")
-    # updateSelectInput(session, "terms_treeplot", choices = go.results[["Description"]], selected = "ward.D")
+    # updateSelectInput(session, "go.cnet.sel", choices = go.tab[["Description"]])
+    updateSelectInput(session, "corrplot.show.cat", choices = go.tab[["Description"]])
+    # updateSelectInput(session, "terms_treeplot", choices = go.tab[["Description"]], selected = "ward.D")
   })
   
   output$tab3 <- renderDataTable({
@@ -1714,10 +1756,110 @@ server <- function(input, output, session){
   
   # Selected terms:
   output$dotp_selected_terms <- renderPrint({
-    
+    selected_terms <- input$dotplot.show.cat
+    cat(selected_terms, sep = "\n")
   })
   
+  # Plot Dot plot:
+  go.dplot <- eventReactive(input$go.dotplot, {
+    req(go.tab())
+    go.tab() %>% 
+      dplyr::filter(Description %in% input$dotplot.show.cat) %>% 
+      dplyr::mutate(Description = ifelse(nchar(Description) <= 50,
+                                         Description,
+                                         paste0(substr(Description,1,46), "...."))) %>% 
+      ggplot(aes(x= RichFactor, y= fct_reorder(Description, RichFactor)))+
+      geom_segment(aes(xend= 0, yend= Description))+
+      geom_point(aes(color= p.adjust, size= Count))+
+      scale_color_viridis_c(guide = guide_colorbar(reverse = T))+
+      scale_size_continuous(range = c(3,10))+
+      theme_linedraw()+
+      theme(panel.grid = element_blank(),
+            panel.border = element_blank(),
+            plot.title = element_text(size = 18, face = "bold", hjust = 0.5, colour = "darkred", 
+                                      margin = margin(b=0.2, unit = "in")),
+            plot.margin = unit(c(0.1,0.1,0.1,0.1), "in"),
+            axis.title.x = element_text(size = 16, face = "bold", colour = "darkred", 
+                                        margin = margin(t=0.2, unit = "in")),
+            axis.title.y = element_blank(),
+            axis.text = element_text(size = 14, face = "bold"),
+            legend.title = element_text(size = 15, face = "bold", colour = "darkred",
+                                        margin = margin(b=0.2, unit = "in")),
+            legend.text = element_text(size = 13),
+            legend.box.margin = margin(l=0.2, unit = "in"))+
+      labs(title = "GO Enriched Terms")
+  })
   
+  output$plt6 <- renderPlot({
+    req(go.dplot())
+    go.dplot()
+  }, width = 800, height = 700)
+  
+  # Saving parameters:
+  observeEvent(input$download.go.dplot, {
+    showModal(
+      modalDialog(
+        title = "Save Dotplot as PDF",
+        numericInput("width_godotplot", "Width (in inches):", value = 6, min = 4, step = 0.5),
+        numericInput("height_godotplot", "Height (in inches):", value = 8, min = 4, step = 0.5),
+        textInput("go.dplot_name", "Filename:", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          downloadButton("download.go.dplot.modal", "Download", class = "btn-success")
+        )
+      )
+    )
+  })
+  
+  # Apply pairwise term-sim to GOobj:
+  GOobject_paired <- eventReactive(GOobject(), {
+    req(GOobject())
+    GOobject <- GOobject()
+    pairwise_termsim(GOobject, method = "JC", showCategory = 250)
+  })
+  
+  #### p3: Correlation plot   ----------------------------------------------------------
+  corrplot_sel_terms <- reactiveVal(character(0))
+  
+  observeEvent(input$corrplot.show.cat, {
+    selected_terms <- input$corrplot.show.cat
+    corrplot_sel_terms(selected_terms)
+  })
+  
+  # Selected terms:
+  output$corrp_selected_terms <- renderPrint({
+    selected_terms <- input$corrplot.show.cat
+    cat(selected_terms, sep = "\n")
+  })
+  
+  Corr_plot <- eventReactive(input$go.corrplot, {
+    req(GOobject_paired(), corrplot_sel_terms())
+    GOobject_paired <- GOobject_paired()
+    term_sim_mat <- GOobject_paired@termsim[corrplot_sel_terms(),corrplot_sel_terms()]
+    colnames(term_sim_mat) <- ifelse(nchar(colnames(term_sim_mat)) <= 25, 
+                                     colnames(term_sim_mat), 
+                                     paste0(substr(colnames(term_sim_mat),1,23),"...."))
+    rownames(term_sim_mat) <- ifelse(nchar(rownames(term_sim_mat)) <= 60, 
+                                     rownames(term_sim_mat), 
+                                     paste0(substr(rownames(term_sim_mat),1,58),"...."))
+    
+    corrplot::corrplot(term_sim_mat,
+                       type = "upper",
+                       method = input$corr.methode,
+                       tl.col = "black",
+                       hclust.method = input$corr.hclust,
+                       order = "hclust",
+                       tl.cex = input$tl.cex,
+                       tl.srt = input$tl.srt,
+                       cl.cex = 1.1,
+                       cl.ratio = 0.16,
+                       mar = c(0,0,0,0))
+  })
+  
+  output$plt.corrplot <- renderPlot({
+    req(Corr_plot())
+    Corr_plot()
+  }, height = 700, width = 800)
   
   
   
@@ -1775,27 +1917,7 @@ server <- function(input, output, session){
     filename = function(){paste0(input$dplot_name,".pdf")},
     content = function(file){
       pdf(file, width = input$width_dplot, height = input$height_dplot)
-      Dotplot_Genes(c(input$Sel.up.dplot, input$Sel.down.dplot))
-      seurat <- seurat()
-      DotPlot(seurat,
-              features = Dotplot_Genes(),
-              group.by = input$Sel.metadata2)+
-        RotatedAxis()+
-        coord_flip()+
-        theme_bw()+
-        labs(title = paste0("Genes expression within :  ", input$Sel.metadata2),
-             x="",
-             y="")+
-        scale_color_gradient(low = "orange", high = "navy")+
-        theme(axis.title = element_text(face= "bold", size= 15),
-              axis.text.y = element_text(size= 16, face = "bold"),
-              axis.text.x = element_text(size= 16, face = "bold", angle = input$angle),
-              legend.title = element_text(face= "bold", size= 16, colour= "darkred"),
-              legend.text = element_text(size= 13, colour= "black"),
-              plot.title = element_text(size = 18, colour = "darkred", face = "bold"),
-              panel.grid = element_blank()) -> plot
-      
-      print(plot)
+      print(Dplot())
       dev.off()
     }
   )
@@ -1832,6 +1954,22 @@ server <- function(input, output, session){
   output$download.tab.go <- downloadHandler(
     filename = function(){paste0("GO_res_", input$go.list.genes,"_", input$go.list.genes.reg,".xlsx")},
     content = function(file){write_xlsx(go.tab(), path = file)}
+  )
+  
+  # List of GO objects:
+  output$dwnload.GoObjList <- downloadHandler(
+    filename = function() {paste0("GO_objects-",Sys.Date(),".rds")},
+    content = function(file) {saveRDS(List_GO(), file)}
+  )
+  
+  # GO Dot plot:
+  output$download.go.dplot.modal <- downloadHandler(
+    filename = function(){paste0(input$go.dplot_name,".pdf")},
+    content = function(file){
+      pdf(file, width = input$width_godotplot, height = input$height_godotplot)
+      print(go.dplot())
+      dev.off()
+    }
   )
   
   
