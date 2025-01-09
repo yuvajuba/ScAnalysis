@@ -909,8 +909,8 @@ ui <- fluidPage(
                             border-radius:10px; margin-top:20px; border-color:cadetblue")),
         column(width = 8,
                div(
-                 style = "overflow-x:auto; width:100%; margin-top:10px",
-                 plotOutput("plt.corrplot", height = "700px")
+                 style = "overflow-x:auto; margin-top:10px; width:100%",
+                 plotOutput("plt.corrplot", height = "auto")
                ))
       )
     )
@@ -1859,7 +1859,7 @@ server <- function(input, output, session){
   output$plt.corrplot <- renderPlot({
     req(Corr_plot())
     Corr_plot()
-  }, height = 700, width = 800)
+  }, height = 1000,  width = 1100)
   
   
   
