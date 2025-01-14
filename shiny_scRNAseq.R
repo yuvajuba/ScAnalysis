@@ -913,6 +913,114 @@ ui <- fluidPage(
                  plotOutput("plt.corrplot", height = "auto")
                ))
       )
+    ),
+    
+    ##### p4: Cnet Plot        --------------------------------------------------
+    tabPanel(
+      tags$span(
+        style = "color:white ; font-weight:600 ; font-size:120%",
+        "CnetPlot"
+      ),
+      p("Now, to concider the potentially biological complexities in which a gene may belong 
+        to multiple annotation categories and provide information of numeric changes if 
+        available, the cnetplot() function will be used to extract complex associations. 
+        It depicts the linkages of genes and biological concepts as a network.",
+        style = "font-weight:600 ; color:darkgreen ; margin-top:20px ; margin-bottom:30px"),
+      
+      fluidRow(
+        column(width = 4,
+               div(
+                 style = "margin-bottom:20px",
+                 selectInput("cnetplot.show.cat", "Select terms", choices = c(), 
+                             size = 15, multiple = T, selectize = F, width = "400px")
+               )),
+        column(width = 4,
+               div(
+                 style = "margin-bottom:20px",
+                 p("Selected terms", style = "margin-bottom:5px ; font-weight:600"),
+                 verbatimTextOutput("cnetp_selected_terms", placeholder = T)
+               )),
+        column(width = 4,
+               div(
+                 style = "margin-bottom:40px",
+                 selectInput("cnet.layout", "Cnet layout",
+                             choices = c("circle","kk","grid","fr"),
+                             selected = "kk"),
+                 numericInput("cnet.genesize", "Gene labels size", value = 0.8, step = 0.1, width = "150px"),
+                 numericInput("cnet.catsize", "Term labels size", value = 1.4, step = 0.1, width = "150px")
+               ),
+               actionButton("go.cnetplot", "Plot Correlation network", class = "btn-sm", width = "90%",
+                            style = "font-size:18px; background-color:midnightblue; font-weight:600; margin-bottom:40px;
+                            border-radius:10px; margin-top:20px; border-color:cadetblue")),
+        column(width = 10,
+               offset = 1,
+               div(
+                 style = "overflow-x:auto; margin-top:20px; width:100%",
+                 plotOutput("plt.cnetplot", height = "auto")
+               ),
+               div(
+                 style = "margin-top:30px ; margin-bottom:30px ; margin-left:100px",
+                 actionButton("download.go.cnetplot","Download as pdf", 
+                              class = "btn-sm", icon = icon("download"),
+                              style = "font-size:20px ; background-color:darkgreen ; 
+                                padding:5px 150px ; border-radius:10px")
+               ))
+      )
+    ),
+    
+    ##### p5: Tree Plot        --------------------------------------------------
+    tabPanel(
+      tags$span(
+        style = "color:white ; font-weight:600 ; font-size:120%",
+        "TreePlot"
+      ),
+      p("A hierarchical clustering between the selected terms below to see the connections !",
+        style = "font-weight:600 ; color:darkgreen ; margin-top:20px ; margin-bottom:30px"),
+      
+      fluidRow(
+        column(width = 4,
+               div(
+                 style = "margin-bottom:20px",
+                 selectInput("treeplot.show.cat", "Select terms", choices = c(), 
+                             size = 20, multiple = T, selectize = F, width = "400px")
+               )),
+        column(width = 4,
+               div(
+                 style = "margin-bottom:20px",
+                 p("Selected terms", style = "margin-bottom:5px ; font-weight:600"),
+                 verbatimTextOutput("treep_selected_terms", placeholder = T)
+               )),
+        column(width = 4,
+               div(
+                 style = "margin-bottom:40px",
+                 selectInput("tree.clust.method", "Clustering method",
+                             choices = c("ward.D","complete","ward.D2","median","single"),
+                             selected = "ward.D"),
+                 radioButtons("treeplot_lab_format", "Labels format", choices = c("1","2","3","4"), inline = T),
+                 numericInput("treeplot_fontsize", "Font size", value = 5, step = 0.5, width = "150px"),
+                 numericInput("treeplot_hexpand", "Hexpand plot", value = 0.15, step = 0.01, width = "150px"),
+                 numericInput("treeplot_nCluster", "Split into n clusters", value = 6, step = 1, width = "150px"),
+                 numericInput("treeplot_bar_tree", "Bar tree extend", value = 8, step = 0.5, width = "150px"),
+                 numericInput("treeplot_tiplab", "Tiplabs", value = 0.6, step = 0.1, width = "150px"),
+                 checkboxInput("treeplot_Clust_highlight", "Highlight clusters", value = T, width = "150px")
+               ),
+               actionButton("go.treeplot", "Plot Treeplot", class = "btn-sm", width = "90%",
+                            style = "font-size:18px; background-color:midnightblue; font-weight:600; margin-bottom:40px;
+                            border-radius:10px; margin-top:20px; border-color:cadetblue")),
+        column(width = 10,
+               offset = 1,
+               div(
+                 style = "overflow-x:auto; margin-top:20px; width:100%",
+                 plotOutput("plt.treeplot", height = "auto")
+               ),
+               div(
+                 style = "margin-top:30px ; margin-bottom:30px ; margin-left:100px",
+                 actionButton("download.go.treeplot","Download as pdf", 
+                              class = "btn-sm", icon = icon("download"),
+                              style = "font-size:20px ; background-color:darkgreen ; 
+                                padding:5px 150px ; border-radius:10px")
+               ))
+      )
     )
   )
 )
@@ -1423,7 +1531,7 @@ server <- function(input, output, session){
     req(hm())
     hm <- hm()
     ComplexHeatmap::draw(hm, heatmap_legend_side = "bottom")
-  }, width = 800, height = 700)
+  }, width = 900, height = 800)
   
   # Saving parameters:
   observeEvent(input$download.hmplot, {
@@ -1740,9 +1848,9 @@ server <- function(input, output, session){
     
     # Updating terms lists:
     updateSelectInput(session, "dotplot.show.cat", choices = go.tab[["Description"]])
-    # updateSelectInput(session, "go.cnet.sel", choices = go.tab[["Description"]])
+    updateSelectInput(session, "cnetplot.show.cat", choices = go.tab[["Description"]])
     updateSelectInput(session, "corrplot.show.cat", choices = go.tab[["Description"]])
-    # updateSelectInput(session, "terms_treeplot", choices = go.tab[["Description"]], selected = "ward.D")
+    updateSelectInput(session, "treeplot.show.cat", choices = go.tab[["Description"]])
   })
   
   output$tab3 <- renderDataTable({
@@ -1861,7 +1969,161 @@ server <- function(input, output, session){
     Corr_plot()
   }, height = 1000,  width = 1100)
   
+  #### p4: Cnet plot   ----------------------------------------------------------
+  cnetplot_sel_terms <- reactiveVal(character(0))
   
+  observeEvent(input$cnetplot.show.cat, {
+    selected_terms <- input$cnetplot.show.cat
+    cnetplot_sel_terms(selected_terms)
+  })
+  
+  # Selected terms:
+  output$cnetp_selected_terms <- renderPrint({
+    selected_terms <- input$cnetplot.show.cat
+    cat(selected_terms, sep = "\n")
+  })
+  
+  # Construct the cnet plot:
+  CNetPlot <- eventReactive(input$go.cnetplot, {
+    req(GOobject(),  List_markers())
+    GOobject <- GOobject()
+    selected_terms <- cnetplot_sel_terms()
+    List_markers <- List_markers()
+    fc <- List_markers[[input$go.list.genes]][["All_FC"]]
+    gene_lbl_size <- input$cnet.genesize
+    cat_lbl_size <- input$cnet.catsize
+    selected_layout <- input$cnet.layout
+    
+    col_gradient <- switch(input$go.list.genes.reg,
+                           "All" = scale_color_gradientn(
+                             colours = c("midnightblue", "white", "darkred"),
+                             values = c(0, 0.5, 1),
+                             limits = c(-5, 5)
+                           ),
+                           "Up" = scale_color_gradientn(
+                             colours = c("#ffffff", "#ffcc22", "#991111", "#500000"),
+                             values = c(0, 0.3, 0.7, 1),
+                             limits = c(0, 5)
+                           ),
+                           "Down" = scale_color_gradientn(
+                             colours = c("#000050", "#111199", "#22ccff", "#ffffff"),
+                             values = c(0, 0.3, 0.7, 1),
+                             limits = c(-5, 0)
+                           ))
+    
+    cnetplot(x = GOobject,
+             showCategory = selected_terms,
+             layout = selected_layout,
+             cex.params = list(gene_node = 0.7, 
+                               gene_label = gene_lbl_size, 
+                               category_node = 1.5,
+                               category_label = cat_lbl_size),
+             color.params = list(category = "#2277cc",
+                                 gene = "#552299",
+                                 edge = T,
+                                 foldChange = fc))+
+      labs(color = "logFC")+
+      theme(legend.box.margin = margin(l=0.3, unit = "in"),
+            legend.title = element_text(size = 14, face = "bold", colour = "darkred", 
+                                        margin = margin(t=0.3,b=0.1, unit = "in")),
+            legend.text = element_text(size = 10, face = "bold"))+
+      col_gradient
+  })
+  
+  # Plot cnet:
+  output$plt.cnetplot <- renderPlot({
+    req(CNetPlot())
+    CNetPlot()
+  }, height = 1000, width = 1200)
+  
+  # Saving parameters:
+  observeEvent(input$download.go.cnetplot, {
+    showModal(
+      modalDialog(
+        title = "Save Cnetplot as PDF",
+        numericInput("width_gocnettplot", "Width (in inches):", value = 10, min = 4, step = 0.5),
+        numericInput("height_gocnettplot", "Height (in inches):", value = 10, min = 4, step = 0.5),
+        textInput("go.cnetplot_name", "Filename:", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          downloadButton("download.go.cnetplot.modal", "Download", class = "btn-success")
+        )
+      )
+    )
+  })
+  
+  #### p5: Tree plot   ----------------------------------------------------------
+  treeplot_sel_terms <- reactiveVal(character(0))
+  
+  observeEvent(input$treeplot.show.cat, {
+    selected_terms <- input$treeplot.show.cat
+    treeplot_sel_terms(selected_terms)
+  })
+  
+  # Selected terms:
+  output$treep_selected_terms <- renderPrint({
+    selected_terms <- input$treeplot.show.cat
+    cat(selected_terms, sep = "\n")
+  })
+  
+  # Construct the treeplot:
+  Treeplot <- eventReactive(input$go.treeplot, {
+    req(GOobject_paired(), List_markers())
+    GOobject_paired <- GOobject_paired()
+    selected_terms <- treeplot_sel_terms()
+    lab_format <- switch(input$treeplot_lab_format,
+                         "1" = 10,
+                         "2" = 20,
+                         "3" = 30,
+                         "4" = 40)
+    treeplot(GOobject_paired, 
+             showCategory = selected_terms,
+             fontsize = input$treeplot_fontsize,
+             color = "p.adjust",
+             cex_category = 1,
+             cluster.params = list(n= input$treeplot_nCluster,
+                                   method = input$tree.clust.method,
+                                   color = MyPalette[1:input$treeplot_nCluster],
+                                   label_words_n = 3,
+                                   label_format = input$treeplot_lab_format),
+             offset.params = list(bar_tree = input$treeplot_bar_tree, 
+                                  tiplab = input$treeplot_tiplab, 
+                                  extend = 0.5, 
+                                  hexpand = input$treeplot_hexpand),
+             highlight.params = list(align = "both"), hilight = input$treeplot_Clust_highlight)+
+      scale_color_gradientn(colours = c("darkred","gold"),
+                            values = c(0,1),
+                            limits = c(0,0.05),
+                            guide = guide_colorbar(title = "pValue.adj"))+
+      scale_size_continuous(range = c(1,7))+
+      labs(colour = "p.adjusted")+
+      theme(legend.title = element_text(face = "bold", 
+                                        colour = "darkred",
+                                        size = 12,
+                                        margin = margin(b=0.2, unit = "in")))
+  })
+  
+  # Tree cnet:
+  output$plt.treeplot <- renderPlot({
+    req(Treeplot())
+    Treeplot()
+  }, height = 1000, width = 900)
+  
+  # Saving parameters:
+  observeEvent(input$download.go.treeplot, {
+    showModal(
+      modalDialog(
+        title = "Save treeplot as PDF",
+        numericInput("width_gotreeplot", "Width (in inches):", value = 10, min = 4, step = 0.5),
+        numericInput("height_gotreeplot", "Height (in inches):", value = 10, min = 4, step = 0.5),
+        textInput("go.treeplot_name", "Filename:", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          downloadButton("download.go.treeplot.modal", "Download", class = "btn-success")
+        )
+      )
+    )
+  })
   
   
   
@@ -1968,6 +2230,26 @@ server <- function(input, output, session){
     content = function(file){
       pdf(file, width = input$width_godotplot, height = input$height_godotplot)
       print(go.dplot())
+      dev.off()
+    }
+  )
+  
+  # GO Cnetwork plot:
+  output$download.go.cnetplot.modal <- downloadHandler(
+    filename = function(){paste0(input$go.cnetplot_name,".pdf")},
+    content = function(file){
+      pdf(file, width = input$width_gocnettplot, height = input$height_gocnettplot)
+      print(CNetPlot())
+      dev.off()
+    }
+  )
+  
+  # GO Tree plot:
+  output$download.go.treeplot.modal <- downloadHandler(
+    filename = function(){paste0(input$go.treeplot_name,".pdf")},
+    content = function(file){
+      pdf(file, width = input$width_gotreeplot, height = input$height_gotreeplot)
+      print(Treeplot())
       dev.off()
     }
   )
