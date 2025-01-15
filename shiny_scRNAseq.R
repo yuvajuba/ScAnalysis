@@ -20,6 +20,7 @@ library(circlize)
 library(purrr)
 library(ggvenn)
 library(forcats)
+library(ggupset)
 
 MyPalette <- c("#9933aa","#ffdd22","#aa4400","#ff0000","#337722","#00ff66","#005566","#002277",
                "#441144","#aa0077","#00bbff","#003333","#4422cc","#116611","#330077","#111111",
@@ -982,7 +983,7 @@ ui <- fluidPage(
                div(
                  style = "margin-bottom:20px",
                  selectInput("treeplot.show.cat", "Select terms", choices = c(), 
-                             size = 20, multiple = T, selectize = F, width = "400px")
+                             size = 25, multiple = T, selectize = F, width = "400px")
                )),
         column(width = 4,
                div(
@@ -1021,8 +1022,78 @@ ui <- fluidPage(
                                 padding:5px 150px ; border-radius:10px")
                ))
       )
+    ),
+    
+    ##### p6: Enrichment map Plot        --------------------------------------------------
+    tabPanel(
+      tags$span(
+        style = "color:white ; font-weight:600 ; font-size:120%",
+        "EmapPlot"
+      ),
+      p("Enrichment map organizes enriched terms into a network with edges connecting 
+        overlapping gene sets. In this way, mutually overlapping gene sets are tend to 
+        cluster together, making it easy to identify functional module.",
+        style = "font-weight:600 ; color:darkgreen ; margin-top:20px ; margin-bottom:30px"),
+      
+      fluidRow(
+        column(width = 4,
+               div(
+                 style = "margin-bottom:20px",
+                 selectInput("emapplot.show.cat", "Select terms", choices = c(), 
+                             size = 30, multiple = T, selectize = F, width = "400px")
+               )),
+        column(width = 4,
+               div(
+                 style = "margin-bottom:20px",
+                 p("Selected terms", style = "margin-bottom:5px ; font-weight:600"),
+                 verbatimTextOutput("emapp_selected_terms", placeholder = T)
+               )),
+        column(width = 4,
+               div(
+                 style = "margin-bottom:40px",
+                 selectInput("emap.layout", "Select layout", 
+                             choices = c("circle","kk","grid","fr"),
+                             selected = "kk"),
+                 numericInput("emap.cex.node", "Node size", value = 1.1, step = 0.1),
+                 numericInput("emap.cex.label", "Label size", value = 1, step = 0.1),
+                 numericInput("emap.cex.line", "edge width", value = .4, step = 0.1),
+                 checkboxGroupInput("emap.displayparams", "Parameters to display",
+                                    choices = c("Show edges", "Group into clusters", "Show cluster legend")),
+                 numericInput("emap.edge.min", "Edge min.similarity", value = 0.4, min = 0, max = 1, step = 0.05),
+                 numericInput("emap.clust.n", "Nb of clusters", value = 3, step = 1),
+                 numericInput("emap.clust.labs", "Cluster n words", value = 3, step = 1)),
+               actionButton("go.emapplot", "Plot Enrichment map", class = "btn-sm", width = "90%",
+                            style = "font-size:18px; background-color:midnightblue; font-weight:600; margin-bottom:40px;
+                            border-radius:10px; margin-top:20px; border-color:cadetblue"),
+               ),
+        column(width = 10,
+               offset = 1,
+               div(
+                 style = "overflow-x:auto; margin-top:20px; width:100%",
+                 plotOutput("plt.emapplot", height = "auto")
+               ),
+               div(
+                 style = "margin-top:30px ; margin-bottom:30px ; margin-left:100px",
+                 actionButton("download.go.emapplot","Download as pdf", 
+                              class = "btn-sm", icon = icon("download"),
+                              style = "font-size:20px ; background-color:darkgreen ; 
+                                padding:5px 150px ; border-radius:10px")
+               ))
+      )
     )
-  )
+  ),
+  
+  #### 1-2- GSEA     -----------------------------------------------------------
+  p("1-2 Gene Set Enrichment Analysis",
+    style = "color:white ; font-weight:600 ; font-size:150% ; background-color:red ; 
+    margin-bottom:10px ; margin-top:60px"),
+  
+  
+  
+  ### 2- Grouped Enrichment analysis      ---------------------------------------
+  p("2- Grouped enrichment analysis",
+    style = "color:darkred ; font-weight:600 ; font-size:160% ; background-color:gold ; 
+    margin-bottom:10px ; margin-top:120px"),
 )
 
 
@@ -1851,6 +1922,7 @@ server <- function(input, output, session){
     updateSelectInput(session, "cnetplot.show.cat", choices = go.tab[["Description"]])
     updateSelectInput(session, "corrplot.show.cat", choices = go.tab[["Description"]])
     updateSelectInput(session, "treeplot.show.cat", choices = go.tab[["Description"]])
+    updateSelectInput(session, "emapplot.show.cat", choices = go.tab[["Description"]])
   })
   
   output$tab3 <- renderDataTable({
@@ -2103,11 +2175,11 @@ server <- function(input, output, session){
                                         margin = margin(b=0.2, unit = "in")))
   })
   
-  # Tree cnet:
+  # Plot treeplot:
   output$plt.treeplot <- renderPlot({
     req(Treeplot())
     Treeplot()
-  }, height = 1000, width = 900)
+  }, height = 900, width = 900)
   
   # Saving parameters:
   observeEvent(input$download.go.treeplot, {
@@ -2120,6 +2192,77 @@ server <- function(input, output, session){
         footer = tagList(
           modalButton("Cancel"),
           downloadButton("download.go.treeplot.modal", "Download", class = "btn-success")
+        )
+      )
+    )
+  })
+  
+  #### p6: Emap plot   ----------------------------------------------------------
+  emapplot_sel_terms <- reactiveVal(character(0))
+  
+  observeEvent(input$emapplot.show.cat, {
+    selected_terms <- input$emapplot.show.cat
+    emapplot_sel_terms(selected_terms)
+  })
+  
+  # Selected terms:
+  output$emapp_selected_terms <- renderPrint({
+    selected_terms <- input$emapplot.show.cat
+    cat(selected_terms, sep = "\n")
+  })
+  
+  # Construct the emapplot:
+  emapplot <- eventReactive(input$go.emapplot, {
+    req(GOobject_paired(), List_markers())
+    GOobject_paired <- GOobject_paired()
+    selected_terms <- emapplot_sel_terms()
+    display_params <- input$emap.displayparams
+    show_edges <- "Show edges" %in% display_params
+    group_clusters <- "Group into clusters" %in% display_params
+    show_legend <- "Show cluster legend" %in% display_params
+    
+    enrichplot::emapplot(GOobject_paired,
+                         showCategory = selected_terms,
+                         repel = T,
+                         edge.params = list(show = show_edges, min = input$emap.edge.min),
+                         cex.params = list(category_node = input$emap.cex.node, 
+                                           category_label = input$emap.cex.label, 
+                                           line = input$emap.cex.line,
+                                           label_group = 1),
+                         cluster.params = list(cluster = group_clusters, 
+                                               method = stats::kmeans, 
+                                               n = input$emap.clust.n, 
+                                               legend = show_legend, 
+                                               label_style = "shadowtext", 
+                                               label_words_n = input$emap.clust.labs, 
+                                               label_format = 30),
+                         layout.params = list(layout = input$emap.layout),
+                         node_label = "category")+
+      theme(legend.box.margin = margin(l=0.2, unit = "in"),
+            plot.margin = margin(t= 0.1, b=0.1, unit = "in"))+
+      scale_fill_gradientn(colours = c("darkred","gold"),
+                           values = c(0,1),
+                           limits = c(0, 0.05))+
+      labs(fill= "p.adjust")
+  })
+  
+  # Plot emapplot:
+  output$plt.emapplot <- renderPlot({
+    req(emapplot())
+    emapplot()
+  }, height = 900, width = 900)
+  
+  # Saving parameters:
+  observeEvent(input$download.go.emapplot, {
+    showModal(
+      modalDialog(
+        title = "Save Emapplot as PDF",
+        numericInput("width_goemapplot", "Width (in inches):", value = 10, min = 4, step = 0.5),
+        numericInput("height_goemapplot", "Height (in inches):", value = 10, min = 4, step = 0.5),
+        textInput("go.emapplot_name", "Filename:", value = ""),
+        footer = tagList(
+          modalButton("Cancel"),
+          downloadButton("download.go.emapplot.modal", "Download", class = "btn-success")
         )
       )
     )
@@ -2250,6 +2393,16 @@ server <- function(input, output, session){
     content = function(file){
       pdf(file, width = input$width_gotreeplot, height = input$height_gotreeplot)
       print(Treeplot())
+      dev.off()
+    }
+  )
+  
+  # GO Emap plot:
+  output$download.go.emapplot.modal <- downloadHandler(
+    filename = function(){paste0(input$go.emapplot_name,".pdf")},
+    content = function(file){
+      pdf(file, width = input$width_goemapplot, height = input$height_goemapplot)
+      print(Emapplot())
       dev.off()
     }
   )
