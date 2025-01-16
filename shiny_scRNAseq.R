@@ -1863,6 +1863,8 @@ server <- function(input, output, session){
     current_list <- List_GO()
     contrast_name <- paste0("GOobj_",input$go.list.genes,"_",input$go.list.genes.reg)
     if(contrast_name %in% names(current_list)){
+      current_list[[contrast_name]] <- GOobject()
+      List_GO(current_list)
       showNotification(paste0("The contrast ", contrast_name, " already exists in the list!"), 
                        type = "warning")
     } else {
@@ -2171,8 +2173,8 @@ server <- function(input, output, session){
       labs(colour = "p.adjusted")+
       theme(legend.title = element_text(face = "bold", 
                                         colour = "darkred",
-                                        size = 12,
-                                        margin = margin(b=0.2, unit = "in")))
+                                        size = 14,
+                                        margin = margin(b=0.3, unit = "in")))
   })
   
   # Plot treeplot:
@@ -2239,7 +2241,11 @@ server <- function(input, output, session){
                          layout.params = list(layout = input$emap.layout),
                          node_label = "category")+
       theme(legend.box.margin = margin(l=0.2, unit = "in"),
-            plot.margin = margin(t= 0.1, b=0.1, unit = "in"))+
+            plot.margin = margin(t= 0.1, b=0.1, unit = "in"),
+            legend.title = element_text(face = "bold", 
+                                        colour = "darkred",
+                                        size = 14,
+                                        margin = margin(b=0.3, unit = "in")))+
       scale_fill_gradientn(colours = c("darkred","gold"),
                            values = c(0,1),
                            limits = c(0, 0.05))+
