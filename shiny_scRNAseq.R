@@ -1725,19 +1725,28 @@ server <- function(input, output, session){
                     "All genes" = "All")
     sets <- list()
     for(set in input$sel.markers.list){sets[[set]] <- List_markers[[set]][[genes]]}
-    Display_Venn(sets, 
-                 set.names = input$sel.markers.list, 
-                 colpalette = MyPalette,
-                 Padding = input$vplot.padding,
-                 text.size = input$vplot.text.size,
-                 set.name.size = input$vplot.setname.size)
+    if(length(sets) <= 4){
+      Display_Venn(sets, 
+                   set.names = input$sel.markers.list, 
+                   colpalette = MyPalette,
+                   Padding = input$vplot.padding,
+                   text.size = input$vplot.text.size,
+                   set.name.size = input$vplot.setname.size)
+    } else {
+      stop("Please select only up to 4 set of genes to compare !")
+    }
+    
   })
   
   # Venn Plot:
   Venn_plot <- eventReactive(Venn_obj(), {
     req(Venn_obj())
     Venn_obj <- Venn_obj()
-    Venn_obj[["plot"]]
+    if(length(Venn_obj) <= 4 & length(Venn_obj) >= 2){
+      Venn_obj[["plot"]]
+    } else {
+      stop("Please check out your gene set selection ! can't handle over 4 selections")
+    }
   })
   
   output$vennplot <- renderPlot({
