@@ -1,0 +1,53 @@
+---
+title: "[Markers analysis]{style='color:gold; font-weight:600'}"
+author: "[juba]{style='color:yellowgreen; font-weight:600'}"
+date: "[`r Sys.Date()`]{style='color:white; font-weight:600'}"
+output: 
+  html_document:
+    number_sections: no
+    toc: yes
+    toc_depth: 6
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    df_print: paged 
+    fig_width: 7
+    fig_height: 6
+    css: markdown_style.css
+
+params:
+  c3m: TRUE
+---
+
+# First header
+
+ok so now here for this first header I'm just gonna write anything that comes 
+to my mind
+
+```{r}
+x <- 5
+y <- 8
+
+x**y
+```
+
+## Second header
+
+Trying to write something here
+super powerfull 
+
+### third one
+
+and of course 
+
+#### fourth one
+
+##### fifth one and last
+
+```{r, rows.print=5}
+p <- iris
+iris
+plot(x= p$Sepal.Length, y= p$Sepal.Width, col= p$Species, pch= 19)
+```
+
+

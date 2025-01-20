@@ -1,0 +1,81 @@
+/* Body */
+body {
+    font-family: 'Times New Romain';
+    line-height: 2.4;
+    background-color: #222222;
+    color: #ffffff;
+    padding-left: 10px;
+    font-size: 18px;
+}
+
+/* Titles */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: #ce9326;
+}
+
+h1 {
+    font-size: 36px;
+    color: #ff6e2b;
+    border-top: 3px dotted white;
+    border-bottom: 3px dotted white;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    
+}
+
+h2 {
+    font-size: 33px;
+    color: #ff8045;
+    margin-top: 50px;
+    margin-bottom: 20px;
+}
+
+h3 {
+    font-size: 31px;
+    color: #ff9564;
+    margin-top: 40px;
+    margin-bottom: 20px;
+}
+
+h4 {
+    font-size: 28px;
+    color: #ffad87;
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+h5 {
+    font-size: 25px;
+    color: #ffccb5;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+p {
+    color: #ffffff;
+    margin-bottom: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 20px;
+    border-color: magenta;
+}
+
+th, td {
+    border: 2px solid rgb(230, 133, 133);
+    padding: 15px;
+}
+
+th {
+    background-color: #44ff22;
+    font-weight: 600;
+    border: 2px solid #ff0044;
+    color: #222222;
+}
+
+tr:nth-child(even) {
+    background-color: #33aaff;
+}
