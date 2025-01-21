@@ -8,48 +8,84 @@ body {
     font-size: 18px;
 }
 
-/* Titles */
-h1, h2, h3, h4, h5, h6 {
+/* Titles and text */
+#header h1.title.toc-ignore {
+    color:gold;
     font-weight: 600;
-    color: #ce9326;
+    border: 4px dotted gold;
+    padding-top: 10px;
+    padding-bottom: 20px;
+    padding-left: 5px;
+    margin-bottom: 20px;
+    margin-top: 10px;
+    text-shadow: 5px 8px 3px rgb(255, 255, 255, 0.4);
+    font-size: 40px;
+}
+
+#header h4.author {
+    color: cadetblue;
+    font-weight: 600;
+    font-size: 30px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+#header h4.date {
+    color: rgb(153, 181, 182);
+    font-weight: 600;
+    font-size: 30px;
+    margin-top: 10px;
+    margin-bottom: 50px;
+    border-bottom: 4px solid gold;
+    padding-bottom: 30px;
 }
 
 h1 {
     font-size: 36px;
+    font-weight: 600;
     color: #ff6e2b;
-    border-top: 3px dotted white;
-    border-bottom: 3px dotted white;
-    padding-top: 15px;
-    padding-bottom: 15px;
-    
+    margin-top: 80px;
+    margin-bottom: 10px;
 }
 
 h2 {
     font-size: 33px;
+    font-weight: 600;
     color: #ff8045;
-    margin-top: 50px;
-    margin-bottom: 20px;
+    margin-top: 80px;
+    margin-bottom: 10px;
 }
 
 h3 {
     font-size: 31px;
+    font-weight: 600;
     color: #ff9564;
-    margin-top: 40px;
-    margin-bottom: 20px;
+    margin-top: 70px;
+    margin-bottom: 10px;
 }
 
 h4 {
     font-size: 28px;
+    font-weight: 600;
     color: #ffad87;
-    margin-top: 30px;
-    margin-bottom: 20px;
+    margin-top: 50px;
+    margin-bottom: 5px;
 }
 
 h5 {
     font-size: 25px;
+    font-weight: 600;
     color: #ffccb5;
-    margin-top: 20px;
-    margin-bottom: 20px;
+    margin-top: 30px;
+    margin-bottom: 5px;
+}
+
+h6 {
+    font-size: 25px;
+    font-weight: 600;
+    color: #ffd7c4;
+    margin-top: 30px;
+    margin-bottom: 5px;
 }
 
 p {
@@ -57,25 +93,55 @@ p {
     margin-bottom: 10px;
 }
 
+
+/* Tables */
+
 table {
     width: 100%;
     border-collapse: collapse;
     border-radius: 20px;
-    border-color: magenta;
+    font-size: 16px;
 }
 
 th, td {
-    border: 2px solid rgb(230, 133, 133);
-    padding: 15px;
+    border: 2px solid rgb(255, 255, 255);
+    padding: 5px;
+    margin-bottom: 5px;
+    text-align: right;
 }
 
 th {
-    background-color: #44ff22;
+    background-color: #286d9b;
+    border: 2px solid rgb(255, 255, 255);
     font-weight: 600;
-    border: 2px solid #ff0044;
-    color: #222222;
+    color: #000000;
+    font-size: 17px;
 }
 
-tr:nth-child(even) {
-    background-color: #33aaff;
+td {
+    font-weight: 600;
 }
+
+tr:hover {
+    background-color: rgb(200, 100, 100);
+}
+
+#TOC {
+    background-color: #ffffff; 
+    border: 4px solid #777777; 
+    border-radius: 8px; 
+    padding: 5px; 
+    margin-bottom: 20px; 
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8); 
+    font-family: 'Times New Romain';
+    max-width: 300px; 
+    color: #000000;
+}
+
+#TOC li.tocify-item.list-group-item.active {
+    cursor: grabbing;
+}
+
+
+
+

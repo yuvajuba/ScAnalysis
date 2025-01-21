@@ -1,15 +1,12 @@
 ---
-title: "[Markers analysis]{style='color:gold; font-weight:600'}"
-author: "[juba]{style='color:yellowgreen; font-weight:600'}"
-date: "[`r Sys.Date()`]{style='color:white; font-weight:600'}"
+title: "Markers analysis"
+author: "juba"
+date: "`r Sys.Date()`"
 output: 
   html_document:
     number_sections: no
-    toc: yes
-    toc_depth: 6
-    toc_float:
-      collapsed: false
-      smooth_scroll: true
+    toc: true
+    toc_float: true
     df_print: paged 
     fig_width: 7
     fig_height: 6
