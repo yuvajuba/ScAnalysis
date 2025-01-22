@@ -49,7 +49,7 @@ h1 {
 }
 
 h2 {
-    font-size: 33px;
+    font-size: 32px;
     font-weight: 600;
     color: #ff8045;
     margin-top: 80px;
@@ -57,7 +57,7 @@ h2 {
 }
 
 h3 {
-    font-size: 31px;
+    font-size: 30px;
     font-weight: 600;
     color: #ff9564;
     margin-top: 70px;
@@ -65,7 +65,7 @@ h3 {
 }
 
 h4 {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 600;
     color: #ffad87;
     margin-top: 50px;
@@ -73,7 +73,7 @@ h4 {
 }
 
 h5 {
-    font-size: 25px;
+    font-size: 24px;
     font-weight: 600;
     color: #ffccb5;
     margin-top: 30px;
@@ -81,7 +81,7 @@ h5 {
 }
 
 h6 {
-    font-size: 25px;
+    font-size: 24px;
     font-weight: 600;
     color: #ffd7c4;
     margin-top: 30px;
@@ -90,7 +90,33 @@ h6 {
 
 p {
     color: #ffffff;
-    margin-bottom: 10px;
+    margin-bottom: 3px;
+}
+
+p.important {
+    color: #88ff88;
+    margin-bottom: 4px;
+    font-size: 20px;
+    font-weight: 600;
+    text-decoration: dashed;
+}
+
+p.p1 {
+    color: #ffff88;
+    margin-bottom: 3px;
+    font-weight: 500;
+}
+
+p.p2 {
+    color: #ff88ff;
+    margin-bottom: 3px;
+    font-weight: 500;
+}
+
+p.p3 {
+    color: #88ffff;
+    margin-bottom: 3px;
+    font-weight: 500;
 }
 
 

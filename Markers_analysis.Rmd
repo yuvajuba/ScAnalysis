@@ -7,7 +7,9 @@ output:
     number_sections: no
     toc: true
     toc_float: true
-    df_print: paged 
+    highlight: "tango"
+    df_print: paged
+    code_folding: hide
     fig_width: 7
     fig_height: 6
     css: markdown_style.css
@@ -16,35 +18,469 @@ params:
   c3m: TRUE
 ---
 
-# First header
+```{r Setting, echo=FALSE, message=FALSE, warning=FALSE}
+## Loading packages
+library(knitr)
+library(Seurat)
+library(dplyr)
+library(ggplot2)
+library(tibble)
+library(writexl)
+library(devtools)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(AnnotationDbi)
+library(enrichplot)
+library(purrr)
+library(ggvenn)
+library(forcats)
+library(ggupset)
 
-ok so now here for this first header I'm just gonna write anything that comes 
-to my mind
+## Palettes :
+MyPalette <- c("#9933aa","#ffdd22","#aa4400","#ff0000","#337722","#00ff66","#005566","#002277",
+               "#441144","#aa0077","#00bbff","#003333","#4422cc","#116611","#330077","#111111",
+               "#667700","#ddaa00","#33ffff","#ff22ff","#ffff33","#00ff00","#0000ff","#444444")
+
+## Directories :
+if(params$c3m == T){
+  out_dir <- "~/Bureau/Projects/SingleCell/ScAnalysis/AllLibs/"
+}
+
+## Chunk options :
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = FALSE)
+```
+
+```{r Functions}
+## Venn diagram
+Display_Venn <- function(Markers, 
+                         colpalette = NULL, 
+                         set.names = NULL, 
+                         set.name.size = 5,
+                         text.size = 5,
+                         Padding = 0.03) {
+  
+  # package install checking
+  pkgs <- c("ggvenn","purrr")
+  for(pkg in pkgs){
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      install.packages(pkg)
+    }
+  }
+  
+  library(ggvenn)
+  library(purrr)
+  
+  # Arguments validation
+  if (is.null(Markers)) {
+    stop("Argument 'Markers' is NULL. Please provide a list of sets.")
+  }
+  
+  if (!is.list(Markers)) {
+    stop("Argument 'Markers' must be a list of vectors.")
+  }
+  
+  if (!all(sapply(Markers, is.vector))) {
+    stop("All elements in the 'Markers' list must be vectors.")
+  }
+  
+  
+  n <- ifelse(length(Markers) >= 4, 4, length(Markers))
+  
+  if (n < 2) {
+    stop("You need at least 2 sets to make a comparison.")
+  }
+  
+  if (length(Markers) > 4) {
+    warning("The function supports up to 4 sets only. Taking the first 4 vectors as arguments")
+  }
+  
+  # Handling colours
+  default_palette <- c("navy", "red", "darkgreen", "violet")
+  if (is.null(colpalette) || length(colpalette) < n) {
+    warning("The provided colour palette is too short or NULL. Using default colours.")
+    colpalette <- default_palette[1:n]
+  } else if(length(colpalette) >= n){
+    colpalette <- colpalette[1:n]
+  }
+  
+  # Handling sets
+  sets <- Markers[1:n]
+  if (!(is.null(set.names))) {
+    if (length(set.names) != n) {
+      stop("The length of 'set.names' must match the number of sets in 'Markers'")
+    }
+    names(sets) <- set.names
+  } else if (is.null(names(sets))) {
+    names(sets) <- paste0("Set", 1:n)
+  }
+  
+  # Calculate intersections
+  common_genes <- list()
+  for(i in 2:n){
+    x <- combn(sets, i, simplify = F)
+    for(s in 1:length(x)){
+      if(i == 2){
+        common_genes[[paste(names(x[[s]]), collapse = " ∩ ")]] <- intersect(x[[s]][[1]], x[[s]][[2]])
+      }
+      
+      if(i == 3){
+        common_genes[[paste(names(x[[s]]), collapse = " ∩ ")]] <- purrr::reduce(list(x[[s]][[1]],
+                                                                                     x[[s]][[2]],
+                                                                                     x[[s]][[3]]), 
+                                                                                intersect)
+      }
+      
+      if(i == 4){
+        common_genes[["Common all"]] <- purrr::reduce(x[[s]], intersect)
+      }
+    }
+  }
+  
+  # Calculate group specific genes
+  specific_genes <- list()
+  for(i in 2:n){
+    x <- combn(sets, i, simplify = F)
+    for(s in 1:length(x)){
+      if(i == 2){
+        specific_genes[[paste(names(x[[s]]), collapse = " | ")]] <- setNames(list(setdiff(x[[s]][[1]], 
+                                                                                          intersect(x[[s]][[1]], 
+                                                                                                    x[[s]][[2]])),
+                                                                                  setdiff(x[[s]][[2]], 
+                                                                                          intersect(x[[s]][[1]], 
+                                                                                                    x[[s]][[2]]))),
+                                                                             c(names(x[[s]][1]), 
+                                                                               names(x[[s]][2])))
+      }
+      
+      if(i == 3){
+        specific_genes[[paste(names(x[[s]]), collapse = " | ")]] <- setNames(list(setdiff(x[[s]][[1]], 
+                                                                                          union(x[[s]][[2]], 
+                                                                                                x[[s]][[3]])),
+                                                                                  setdiff(x[[s]][[2]], 
+                                                                                          union(x[[s]][[1]], 
+                                                                                                x[[s]][[3]])),
+                                                                                  setdiff(x[[s]][[3]], 
+                                                                                          union(x[[s]][[2]], 
+                                                                                                x[[s]][[1]]))),
+                                                                             c(names(x[[s]][1]), 
+                                                                               names(x[[s]][2]), 
+                                                                               names(x[[s]][3])))
+      }
+      
+      if(i == 4){
+        specific_genes[["unique each"]] <- setNames(list(setdiff(x[[s]][[1]],
+                                                                 purrr::reduce(list(x[[s]][[2]], 
+                                                                                    x[[s]][[3]], 
+                                                                                    x[[s]][[4]]), 
+                                                                               union)),
+                                                         setdiff(x[[s]][[2]],
+                                                                 purrr::reduce(list(x[[s]][[1]], 
+                                                                                    x[[s]][[3]], 
+                                                                                    x[[s]][[4]]), 
+                                                                               union)),
+                                                         setdiff(x[[s]][[3]],
+                                                                 purrr::reduce(list(x[[s]][[2]], 
+                                                                                    x[[s]][[1]], 
+                                                                                    x[[s]][[4]]), 
+                                                                               union)),
+                                                         setdiff(x[[s]][[4]],
+                                                                 purrr::reduce(list(x[[s]][[2]], 
+                                                                                    x[[s]][[3]], 
+                                                                                    x[[s]][[1]]), 
+                                                                               union))),
+                                                    c(names(x[[s]][1]),
+                                                      names(x[[s]][2]),
+                                                      names(x[[s]][3]),
+                                                      names(x[[s]][4])))
+      }
+    }
+  }
+  
+  # Plot
+  p <- ggvenn(
+    sets,
+    fill_color = colpalette,
+    stroke_size = .8,
+    show_elements = F,
+    stroke_linetype = "solid",
+    set_name_color = colpalette,
+    set_name_size = set.name.size,
+    text_color = "black",
+    text_size = text.size,
+    padding = Padding, 
+    show_stats = "c", 
+    fill_alpha = 0.4
+  )
+  
+  return(list(plot = p, intersections = common_genes, group_specific = specific_genes))
+}
+```
+
+
+
+# Importing the data {.tabset .tabset-pills}
+
+<p class="important">The data here are a lists of DEGs and GO objects extracted from the shiny app after we've done the DEA and PEA</p>
+
+```{r ,echo=TRUE}
+Markers1_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-Markers-logfc0.5-minpct0.25-diffpct0.rds")
+Markers2_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
+Markers1_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-Markers-logfc0.5-minpct0.25-diffpct0.rds")
+Markers2_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
+Markers1_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-Markers-logfc0.5-minpct0.25-diffpct0.rds")
+Markers2_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
+
+GOobj1_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
+GOobj2_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
+GOobj1_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
+GOobj2_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
+GOobj1_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
+GOobj2_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
+```
+
+## Library 1
 
 ```{r}
-x <- 5
-y <- 8
-
-x**y
+cat(names(Markers1_lib1), sep = "\n")
 ```
 
-## Second header
+## Library 2
 
-Trying to write something here
-super powerfull 
-
-### third one
-
-and of course 
-
-#### fourth one
-
-##### fifth one and last
-
-```{r, rows.print=5}
-p <- iris
-iris
-plot(x= p$Sepal.Length, y= p$Sepal.Width, col= p$Species, pch= 19)
+```{r}
+cat(names(Markers1_lib2), sep = "\n")
 ```
+
+## Library 3
+
+```{r}
+cat(names(Markers1_lib3), sep = "\n")
+```
+
+
+
+
+
+# Lib1 inner inspection
+
+<p class='important'>We will inspect the genes inside library1, comparing the clonotypes etc...</p>
+
+
+<p class='p3'>1-1- UpGenes from General conditions (all relapse __vs__ all diagnosis)</p>
+
+```{r}
+Markers1_lib1$lib1_R_vs_D$Up
+```
+
+<p class='p3'>1-2- Corresponding enriched terms (filtered by significance)</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_R_vs_D_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+  dplyr::arrange(desc(RichFactor))
+```
+
+
+<p class='p3'>2-1- UpGenes from all relapse __vs__ diagnosis (without IC)</p>
+
+```{r}
+Markers1_lib1$lib1_R_vs_D_ICfree$Up
+```
+
+<p class='p3'>2-2- Corresponding enriched terms (filtered by significance)</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_R_vs_D_ICfree_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+  dplyr::arrange(desc(RichFactor))
+```
+
+<p class='p3'>3-1- UpGenes from all relapse __vs__ IC</p>
+
+```{r}
+Markers1_lib1$lib1_R_vs_IC$Up
+```
+
+<p class='p3'>3-2- Corresponding enriched terms (filtered by significance)</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_R_vs_IC_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+  dplyr::arrange(desc(RichFactor))
+```
+
+<p class='p3'>4-1- UpGenes from IC __vs__ diagnosis</p>
+
+```{r}
+Markers1_lib1$lib1_IC_vs_D$Up
+```
+
+<p class='p3'>4-2- Corresponding enriched terms (filtered by significance)</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_IC_vs_D_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+  dplyr::arrange(desc(RichFactor))
+```
+
+
+<p class='p3'>5- Differences between R-IC, R-D and IC-D</p>
+
+```{r}
+p <- Display_Venn(Markers = list(Up_R_vs_IC = Markers1_lib1$lib1_R_vs_IC$Up,
+                                 Up_R_vs_D = Markers1_lib1$lib1_R_vs_D_ICfree$Up,
+                                 Up_IC_vs_D = Markers1_lib1$lib1_IC_vs_D$Up),
+                  Padding = 0.05)
+
+p$plot
+```
+
+<p class='important'>We have 286 up regulated genes from R-D</p>
+
+-   29 common genes with IC-D
+
+```{r}
+p$intersections$`Up_R_vs_D ∩ Up_IC_vs_D`
+```
+
+-   106 common genes with R-IC
+
+```{r}
+p$intersections$`Up_R_vs_IC ∩ Up_R_vs_D`
+```
+
+-   3 common genes between the 3 lists
+
+```{r}
+p$intersections$`Up_R_vs_IC ∩ Up_R_vs_D ∩ Up_IC_vs_D`
+```
+
+<p class='p2'>his means that from diagnosis (D) to the intermediate cluster (IC), we observe 29 genes that are up-regulated. From IC to relapse (R), 3 of these previously up-regulated genes maintained their up-regulation, alongside 103 additional genes. Furthermore, 154 genes were uniquely up-regulated in the R-D analysis, suggesting that this regulation likely occurred after the blood was sampled for the analysis.</p>
+
+
+<p class='p3'>6- Shared terms between R-IC, R-D and IC-D</p>
+
+```{r ,echo=TRUE}
+tmp <- list(`R-D` = Markers1_lib1$lib1_R_vs_D$Up,
+            `R-IC` = Markers1_lib1$lib1_R_vs_IC$Up,
+            `IC-D` = Markers1_lib1$lib1_IC_vs_D$Up)
+
+xx <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
+  pairwise_termsim()
+```
+
+```{r ,fig.height=8, fig.width=10}
+treeplot(xx, 
+         showCategory = 15, 
+         hilight = F,
+         fontsize = 3,
+         offset.params = list(bar_tree = rel(2), tiplab = rel(2.5), hexpand = 0.05, extend = 0.25),
+         cluster.params = list(n= 6,
+                               method = "ward.D",
+                               color = NULL,
+                               label_words_n = 3,
+                               label_format = 5),
+         clusterPanel.params = list(clusterPanel = "pie",
+                                    pie = "count",
+                                    legend_n = 3,
+                                    colnames_angle = 90))+
+  scale_fill_manual(values = MyPalette)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+<p class='p3'></p>
+
+
+
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+<p class='p3'></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
