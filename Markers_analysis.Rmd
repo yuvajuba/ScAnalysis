@@ -262,7 +262,11 @@ cat(names(Markers1_lib3), sep = "\n")
 
 # Lib1 inner inspection
 
-<p class='important'>We will inspect the genes inside library1, comparing the clonotypes etc...</p>
+<p class='important'>We will inspect the genes inside library1, comparing between the clusters and the clonotypes etc...</p>
+
+## Clonotypes free comparison
+
+<p class='important'>First, let's match the DEGs between the different clusters (without taking into account the clonotypes)</p>
 
 
 <p class='p3'>1-1- UpGenes from General conditions (all relapse __vs__ all diagnosis)</p>
@@ -367,7 +371,7 @@ p$intersections$`Up_R_vs_IC ∩ Up_R_vs_D ∩ Up_IC_vs_D`
 
 <p class='p3'>6- Shared terms between R-IC, R-D and IC-D</p>
 
-```{r ,echo=TRUE}
+```{r}
 tmp <- list(`R-D` = Markers1_lib1$lib1_R_vs_D$Up,
             `R-IC` = Markers1_lib1$lib1_R_vs_IC$Up,
             `IC-D` = Markers1_lib1$lib1_IC_vs_D$Up)
@@ -376,26 +380,38 @@ xx <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff
   pairwise_termsim()
 ```
 
-```{r ,fig.height=8, fig.width=10}
+```{r ,fig.height=10, fig.width=10, echo=TRUE}
 treeplot(xx, 
-         showCategory = 15, 
-         hilight = F,
-         fontsize = 3,
-         offset.params = list(bar_tree = rel(2), tiplab = rel(2.5), hexpand = 0.05, extend = 0.25),
-         cluster.params = list(n= 6,
+         showCategory = 25, 
+         hilight = T,
+         fontsize = 3.5,
+         offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.4),
+         cluster.params = list(n= 8,
                                method = "ward.D",
                                color = NULL,
-                               label_words_n = 3,
-                               label_format = 5),
-         clusterPanel.params = list(clusterPanel = "pie",
+                               label_words_n = 2,
+                               label_format = 10),
+         clusterPanel.params = list(clusterPanel = "heatMap",
                                     pie = "count",
-                                    legend_n = 3,
-                                    colnames_angle = 90))+
-  scale_fill_manual(values = MyPalette)
+                                    legend_n = 5,
+                                    colnames_angle = 60))+
+  # scale_colour_manual(values = MyPalette)+
+  theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
+        legend.text = element_text(size = 12, colour = "black"))
 ```
 
 
+## Clonotypes comparison
 
+<p class='important'>Now, let's inspect the DEGs between our cluster by taking into account their clonotypes</p>
+
+```{r}
+seu <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/SeuratObjects/Seurat3.rds")
+DimPlot(seu, group.by = "TopClones", cols = MyPalette, split.by = "hash.ID")
+DimPlot(seu, group.by = "TopFeatures", cols = MyPalette, split.by = "hash.ID")
+```
+
+The umap shows <p class="p2">__clonotype1__</p> as the dominant clone expressing <p class="p2">__TRBV5-4__</p>, the other clonnotypes are insignificant or not present (at diagnosis for example most of our cells don't have a clonotype which means that the cells here were probably at an ETP stage of the T-ALL), so for this part of the genes inspection, we'll compare the DEGs between the clusters carrying __clonotype1__ only.
 
 
 
