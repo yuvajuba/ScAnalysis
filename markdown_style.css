@@ -5,7 +5,7 @@ body {
     background-color: #222222;
     color: #ffffff;
     padding-left: 10px;
-    font-size: 18px;
+    font-size: 16px;
 }
 
 /* Titles and text */
@@ -25,7 +25,7 @@ body {
 #header h4.author {
     color: cadetblue;
     font-weight: 600;
-    font-size: 30px;
+    font-size: 26px;
     margin-top: 20px;
     margin-bottom: 10px;
 }
@@ -33,7 +33,7 @@ body {
 #header h4.date {
     color: rgb(153, 181, 182);
     font-weight: 600;
-    font-size: 30px;
+    font-size: 26px;
     margin-top: 10px;
     margin-bottom: 50px;
     border-bottom: 4px solid gold;
@@ -41,7 +41,7 @@ body {
 }
 
 h1 {
-    font-size: 36px;
+    font-size: 32px;
     font-weight: 600;
     color: #ff6e2b;
     margin-top: 80px;
@@ -49,7 +49,7 @@ h1 {
 }
 
 h2 {
-    font-size: 32px;
+    font-size: 29px;
     font-weight: 600;
     color: #ff8045;
     margin-top: 80px;
@@ -57,7 +57,7 @@ h2 {
 }
 
 h3 {
-    font-size: 30px;
+    font-size: 26px;
     font-weight: 600;
     color: #ff9564;
     margin-top: 70px;
@@ -65,7 +65,7 @@ h3 {
 }
 
 h4 {
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 600;
     color: #ffad87;
     margin-top: 50px;
@@ -73,7 +73,7 @@ h4 {
 }
 
 h5 {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 600;
     color: #ffccb5;
     margin-top: 30px;
@@ -81,7 +81,7 @@ h5 {
 }
 
 h6 {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 600;
     color: #ffd7c4;
     margin-top: 30px;
@@ -90,32 +90,32 @@ h6 {
 
 p {
     color: #ffffff;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
 }
 
 p.important {
     color: #88ff88;
     margin-bottom: 3px;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
     text-decoration: dashed;
 }
 
 p.p1 {
     color: #ffff88;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
     font-weight: 500;
 }
 
 p.p2 {
     color: #ff88ff;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
     font-weight: 500;
 }
 
 p.p3 {
     color: #88ffff;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
     font-weight: 500;
 }
 
@@ -152,22 +152,44 @@ tr:hover {
     background-color: rgb(200, 100, 100);
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 #TOC {
     background-color: #ffffff; 
     border: 4px solid #777777; 
     border-radius: 8px; 
     padding: 5px; 
     margin-bottom: 20px; 
+    margin-top:0px;
+    margin-right: 10px;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8); 
     font-family: 'Times New Romain';
     max-width: 300px; 
     color: #000000;
+    font-size: 15px;
 }
 
-#TOC li.tocify-item.list-group-item.active {
-    cursor: grabbing;
+#TOC .tocify-header.list-group {
+    font-weight: 600;
+    margin-bottom: 10px;
 }
 
+#TOC .tocify-item.list-group-item {
+    border-left: 3px solid transparent;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#TOC .tocify-item.list-group-item:hover {
+    background-color: rgba(61, 109, 116, 0.815);
+    color: white;
+}
+
+#toc .tocify-item.list-group-item.active {
+    background-color: NAVY;
+    color: gold;
+}
 
 
 

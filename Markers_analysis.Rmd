@@ -380,15 +380,15 @@ xx <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff
   pairwise_termsim()
 ```
 
-```{r ,fig.height=10, fig.width=10, echo=TRUE}
+```{r ,fig.height=13, fig.width=10, echo=TRUE}
 treeplot(xx, 
-         showCategory = 25, 
-         hilight = T,
+         showCategory = 35, 
+         hilight = F,
          fontsize = 3.5,
          offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.4),
          cluster.params = list(n= 8,
                                method = "ward.D",
-                               color = NULL,
+                               color = MyPalette,
                                label_words_n = 2,
                                label_format = 10),
          clusterPanel.params = list(clusterPanel = "heatMap",
@@ -405,13 +405,137 @@ treeplot(xx,
 
 <p class='important'>Now, let's inspect the DEGs between our cluster by taking into account their clonotypes</p>
 
-```{r}
+```{r ,fig.width=10}
 seu <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/SeuratObjects/Seurat3.rds")
 DimPlot(seu, group.by = "TopClones", cols = MyPalette, split.by = "hash.ID")
 DimPlot(seu, group.by = "TopFeatures", cols = MyPalette, split.by = "hash.ID")
 ```
 
-The umap shows <p class="p2">__clonotype1__</p> as the dominant clone expressing <p class="p2">__TRBV5-4__</p>, the other clonnotypes are insignificant or not present (at diagnosis for example most of our cells don't have a clonotype which means that the cells here were probably at an ETP stage of the T-ALL), so for this part of the genes inspection, we'll compare the DEGs between the clusters carrying __clonotype1__ only.
+The umap shows __clonotype1__ as the dominant clone expressing __TRBV5-4__, the other clonnotypes are insignificant or not present (at diagnosis for example most of our cells don't have a clonotype which means that the cells here were probably at an ETP stage of the T-ALL), so for this part of the genes inspection, we'll compare the DEGs between the clusters carrying __clonotype1__ only.
+
+
+<p class='important'>So let's get to the DEGs inspection : "clonotype1 at relapse (Rcl1) vs clonotype1 at diagnosis (Dcl1)", "Rcl1 vs clonotype1 at the intermediate cluster (ICcl1)" and also "ICcl1 vs Dcl1"</p>
+
+
+<p class='p3'>1-1- UpGenes from Rcl1 vs Dcl1</p>
+
+```{r}
+Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up
+```
+
+<p class='p3'>1-2- Corresponding enriched terms (filtered by significance)</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_Rcl1_vs_Dcl1_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+  dplyr::arrange(desc(RichFactor))
+```
+
+
+<p class='p3'>2-1- UpGenes from Rcl1 vs ICcl1</p>
+
+```{r}
+Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up
+```
+
+<p class='p3'>2-2- Corresponding enriched terms (filtered by significance)</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_Rcl1_vs_ICcl1_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+  dplyr::arrange(desc(RichFactor))
+```
+
+
+<p class='p3'>3-1- UpGenes from ICcl1 vs Dcl1</p>
+
+```{r}
+Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up
+```
+
+<p class='p3'>2-2- Corresponding enriched terms (filtered by significance)</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_ICcl1_vs_Dcl1_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+  dplyr::arrange(desc(RichFactor))
+```
+
+
+<p class='p3'>4- Differences and intersections between the 3 groups</p>
+
+```{r}
+p <- Display_Venn(Markers = list(Up_Rcl1_vs_Dcl1 = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
+                                 Up_Rcl1_vs_ICcl1 = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up,
+                                 Up_ICcl1_vs_Dcl1 = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up),
+                  Padding = 0.05)
+
+p$plot
+```
+
+<p class='important'>We have 50 up regulated genes from Rcl1-Dcl1</p>
+
+-   11 common genes with ICcl1-Dcl1
+
+```{r}
+p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_ICcl1_vs_Dcl1`
+```
+
+-   32 common genes with Rcl1-ICcl1
+
+```{r}
+p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_Rcl1_vs_ICcl1`
+```
+
+-   1 common gene between the 3 lists
+
+```{r}
+p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_Rcl1_vs_ICcl1 ∩ Up_ICcl1_vs_Dcl1`
+```
+
+<p class='p2'>his means that from clonotype1 at diagnosis (D) to the intermediate cluster (IC), we observe 11 genes that are up-regulated. From IC to relapse (R), only 1 gene previously up-regulated (RPL30) remains up-regulated, alongside 32 additional genes. Furthermore, only 8 genes were uniquely up-regulated in the Rcl1-Dcl1 analysis, and we have 84 unique genes from ICcl1 to Rcl1 suggesting that from IC to R, the cells from clonotype1 go through some distinct biological mechanisms.</p>
+
+
+<p class='p3'>5- Shared terms between the 3 groups</p>
+
+```{r}
+tmp <- list(`Rcl1-Dcl1` = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
+            `Rcl1-ICcl1` = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up,
+            `ICcl1-Dcl1` = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up)
+
+xx <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
+  pairwise_termsim()
+```
+
+```{r ,fig.height=13, fig.width=10, echo=TRUE}
+treeplot(xx, 
+         showCategory = 35, 
+         cex_category = 4,
+         hilight = F,
+         fontsize = 4,
+         offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.45),
+         cluster.params = list(n= 8,
+                               method = "ward.D",
+                               color = MyPalette,
+                               label_words_n = 2,
+                               label_format = 10),
+         clusterPanel.params = list(clusterPanel = "heatMap",
+                                    pie = "equal",
+                                    legend_n = 5,
+                                    colnames_angle = 35),
+         align_tiplab = F)+
+  # scale_color_manual(values = MyPalette)+
+  theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
+        legend.text = element_text(size = 12, colour = "black"),
+        plot.margin = margin(b=0.1, unit = "in"))
+```
+
 
 
 
