@@ -186,7 +186,7 @@ html {
     color: white;
 }
 
-#toc .tocify-item.list-group-item.active {
+#toc li.tocify-item.active {
     background-color: NAVY;
     color: gold;
 }

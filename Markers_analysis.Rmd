@@ -225,17 +225,17 @@ Display_Venn <- function(Markers,
 ```{r ,echo=TRUE}
 Markers1_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-Markers-logfc0.5-minpct0.25-diffpct0.rds")
 Markers2_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
-Markers1_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-Markers-logfc0.5-minpct0.25-diffpct0.rds")
-Markers2_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
-Markers1_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-Markers-logfc0.5-minpct0.25-diffpct0.rds")
-Markers2_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
+# Markers1_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-Markers-logfc0.5-minpct0.25-diffpct0.rds")
+# Markers2_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
+# Markers1_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-Markers-logfc0.5-minpct0.25-diffpct0.rds")
+# Markers2_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
 
 GOobj1_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
 GOobj2_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
-GOobj1_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
-GOobj2_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
-GOobj1_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
-GOobj2_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
+# GOobj1_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
+# GOobj2_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
+# GOobj1_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
+# GOobj2_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
 ```
 
 ## Library 1
@@ -247,13 +247,13 @@ cat(names(Markers1_lib1), sep = "\n")
 ## Library 2
 
 ```{r}
-cat(names(Markers1_lib2), sep = "\n")
+# cat(names(Markers1_lib2), sep = "\n")
 ```
 
 ## Library 3
 
 ```{r}
-cat(names(Markers1_lib3), sep = "\n")
+# cat(names(Markers1_lib3), sep = "\n")
 ```
 
 
@@ -269,37 +269,39 @@ cat(names(Markers1_lib3), sep = "\n")
 <p class='important'>First, let's match the DEGs between the different clusters (without taking into account the clonotypes)</p>
 
 
-<p class='p3'>1-1- UpGenes from General conditions (all relapse __vs__ all diagnosis)</p>
+<p class='p3'>1-1- Top100 UpGenes from General conditions (all relapse __vs__ all diagnosis)</p>
 
 ```{r}
-Markers1_lib1$lib1_R_vs_D$Up
+Markers1_lib1$lib1_R_vs_D$Up %>% head(100)
 ```
 
 <p class='p3'>1-2- Corresponding enriched terms (filtered by significance)</p>
 
-```{r ,rows.print=6}
+```{r ,rows.print=10}
 GOobj1_lib1$GOobj_lib1_R_vs_D_Up@result %>% 
   dplyr::filter(p.adjust < 0.05) %>% 
   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
   dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-  dplyr::arrange(desc(RichFactor))
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
 ```
 
 
-<p class='p3'>2-1- UpGenes from all relapse __vs__ diagnosis (without IC)</p>
+<p class='p3'>2-1- Top100 UpGenes from all relapse __vs__ diagnosis (without IC)</p>
 
 ```{r}
-Markers1_lib1$lib1_R_vs_D_ICfree$Up
+Markers1_lib1$lib1_R_vs_D_ICfree$Up %>% head(100)
 ```
 
 <p class='p3'>2-2- Corresponding enriched terms (filtered by significance)</p>
 
-```{r ,rows.print=6}
+```{r ,rows.print=10}
 GOobj1_lib1$GOobj_lib1_R_vs_D_ICfree_Up@result %>% 
   dplyr::filter(p.adjust < 0.05) %>% 
   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
   dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-  dplyr::arrange(desc(RichFactor))
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
 ```
 
 <p class='p3'>3-1- UpGenes from all relapse __vs__ IC</p>
@@ -310,12 +312,13 @@ Markers1_lib1$lib1_R_vs_IC$Up
 
 <p class='p3'>3-2- Corresponding enriched terms (filtered by significance)</p>
 
-```{r ,rows.print=6}
+```{r ,rows.print=10}
 GOobj1_lib1$GOobj_lib1_R_vs_IC_Up@result %>% 
   dplyr::filter(p.adjust < 0.05) %>% 
   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
   dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-  dplyr::arrange(desc(RichFactor))
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
 ```
 
 <p class='p3'>4-1- UpGenes from IC __vs__ diagnosis</p>
@@ -326,12 +329,13 @@ Markers1_lib1$lib1_IC_vs_D$Up
 
 <p class='p3'>4-2- Corresponding enriched terms (filtered by significance)</p>
 
-```{r ,rows.print=6}
+```{r ,rows.print=10}
 GOobj1_lib1$GOobj_lib1_IC_vs_D_Up@result %>% 
   dplyr::filter(p.adjust < 0.05) %>% 
   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
   dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-  dplyr::arrange(desc(RichFactor))
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
 ```
 
 
@@ -376,13 +380,28 @@ tmp <- list(`R-D` = Markers1_lib1$lib1_R_vs_D$Up,
             `R-IC` = Markers1_lib1$lib1_R_vs_IC$Up,
             `IC-D` = Markers1_lib1$lib1_IC_vs_D$Up)
 
-xx <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
+tmp_ENTREZ <- list()
+for(i in names(tmp)){
+  tmp_ENTREZ[[paste0(i,"_ENTREZ")]] <- bitr(geneID = tmp[[i]],
+                                           fromType = "SYMBOL",
+                                           toType = "ENTREZID",
+                                           OrgDb = "org.Hs.eg.db")
+}
+
+xx_go <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
+  pairwise_termsim()
+
+xx_kegg <- compareCluster(list(`R-D` = tmp_ENTREZ$`R-D_ENTREZ`$ENTREZID,
+                               `R-IC` = tmp_ENTREZ$`R-IC_ENTREZ`$ENTREZID,
+                               `IC-D` = tmp_ENTREZ$`IC-D_ENTREZ`$ENTREZID), fun = "enrichKEGG", organism = "hsa", pvalueCutoff = 0.05) %>% 
   pairwise_termsim()
 ```
 
-```{r ,fig.height=13, fig.width=10, echo=TRUE}
-treeplot(xx, 
-         showCategory = 35, 
+-   Using GO database :
+
+```{r ,fig.height=10, fig.width=10}
+treeplot(xx_go, 
+         showCategory = 25, 
          hilight = F,
          fontsize = 3.5,
          offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.4),
@@ -399,6 +418,87 @@ treeplot(xx,
   theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
         legend.text = element_text(size = 12, colour = "black"))
 ```
+
+-   Using KEGG database :
+
+```{r ,rows.print=10}
+xx_kegg@compareClusterResult
+```
+
+Among these pathways we have
+
+```{r ,fig.height=7, fig.width=10}
+xx_kegg@compareClusterResult %>% 
+  dplyr::count(category, subcategory) %>% 
+  ggplot()+
+  geom_bar(aes(x= category, y= n, fill= subcategory),
+           stat = "identity",
+           position = "stack",
+           width = 0.7)+
+  theme_bw()+
+  labs(y= "",
+       x= "Categories")+
+  theme(panel.grid.minor = element_blank(),
+        legend.title = element_text(size = 15, colour = "darkred", face = "bold"),
+        legend.text = element_text(size = 12, colour = "black"),
+        axis.title.x = element_text(size = 15, colour = "darkred", face = "bold", margin = margin(t=0.1, unit = "in")),
+        axis.text = element_text(size = 13, colour = "navy", face = "bold"),
+        axis.text.x = element_text(angle = 10),
+        legend.margin = margin(t=0.3, unit = "in"))+
+  scale_y_continuous(breaks = c(10, 20, 30, 40, 50))+
+  scale_fill_manual(values = c(MyPalette, "#ffbbbb", "#ffffbb", "#ffbbff", "#bbffff"))+
+  guides(fill = guide_legend(title = "Subcategories",
+                             position = "right",
+                             ncol = 1,
+                             override.aes = list(colour = "white", size = 3.5)))
+```
+
+```{r ,fig.height=14, fig.width=10}
+dat <- xx_kegg@compareClusterResult %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5))
+
+ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
+  geom_tile(width = 1, height = 1)+
+  scale_fill_gradientn(colours = c("#ffbbbb", "#ffaa55", "#993300", "#550000"),
+                       values = c(0, 0.25, 0.7, 1),
+                       guide = guide_colorbar(barwidth = 1.2, barheight = 8))+
+  theme_bw()+
+  geom_text(aes(label = Count), colour = "white")+
+  facet_grid(category ~ ., scales = "free_y", space = "free_y")+
+  theme(panel.grid = element_blank(),
+        plot.margin = margin(r=2.5, l=0.6, t=0.3, b=0.2, unit = "in"),
+        axis.text.x = element_text(size = 14, face = "bold", colour = "navy"),
+        axis.title = element_blank(),
+        strip.background = element_rect(fill = "gold"),
+        strip.clip = "inherit",
+        strip.text = element_text(size = 12, face = "bold", color = "navy"),
+        axis.text.y = element_text(size = 10, face = "bold", colour = "black"))
+```
+
+
+```{r ,fig.height=10, fig.width=10}
+treeplot(xx_kegg, 
+         showCategory = 25, 
+         hilight = F,
+         fontsize = 3.5,
+         offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.4),
+         cluster.params = list(n= 8,
+                               method = "ward.D",
+                               color = MyPalette,
+                               label_words_n = 2,
+                               label_format = 10),
+         clusterPanel.params = list(clusterPanel = "heatMap",
+                                    pie = "count",
+                                    legend_n = 5,
+                                    colnames_angle = 60))+
+  # scale_colour_manual(values = MyPalette)+
+  theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
+        legend.text = element_text(size = 12, colour = "black"))
+```
+
+
+
+
 
 
 ## Clonotypes comparison
