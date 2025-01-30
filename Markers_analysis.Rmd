@@ -393,7 +393,10 @@ xx_go <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCut
 
 xx_kegg <- compareCluster(list(`R-D` = tmp_ENTREZ$`R-D_ENTREZ`$ENTREZID,
                                `R-IC` = tmp_ENTREZ$`R-IC_ENTREZ`$ENTREZID,
-                               `IC-D` = tmp_ENTREZ$`IC-D_ENTREZ`$ENTREZID), fun = "enrichKEGG", organism = "hsa", pvalueCutoff = 0.05) %>% 
+                               `IC-D` = tmp_ENTREZ$`IC-D_ENTREZ`$ENTREZID), 
+                          fun = "enrichKEGG", 
+                          organism = "hsa", 
+                          pvalueCutoff = 0.05) %>% 
   pairwise_termsim()
 ```
 
@@ -442,7 +445,7 @@ xx_kegg@compareClusterResult %>%
         legend.title = element_text(size = 15, colour = "darkred", face = "bold"),
         legend.text = element_text(size = 12, colour = "black"),
         axis.title.x = element_text(size = 15, colour = "darkred", face = "bold", margin = margin(t=0.1, unit = "in")),
-        axis.text = element_text(size = 13, colour = "navy", face = "bold"),
+        axis.text = element_text(size = 12, colour = "navy", face = "bold"),
         axis.text.x = element_text(angle = 10),
         legend.margin = margin(t=0.3, unit = "in"))+
   scale_y_continuous(breaks = c(10, 20, 30, 40, 50))+
