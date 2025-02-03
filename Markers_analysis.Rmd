@@ -428,7 +428,7 @@ treeplot(xx_go,
 xx_kegg@compareClusterResult
 ```
 
-Among these pathways we have
+The pathways are divided into categories and subcategories, the following bar plot bellow describes the different categories we have. 
 
 ```{r ,fig.height=7, fig.width=10}
 xx_kegg@compareClusterResult %>% 
@@ -456,9 +456,14 @@ xx_kegg@compareClusterResult %>%
                              override.aes = list(colour = "white", size = 3.5)))
 ```
 
+And now, to see the terms associated in each category.
+
+__RichFactor__ refers to the ratio between the __number of genes__ from my list of interest and the __size of the enriched pathway__. And the the numbers inside the tiles refer to the number of genes from my list.
+
 ```{r ,fig.height=14, fig.width=10}
 dat <- xx_kegg@compareClusterResult %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5))
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+  dplyr::filter(p.adjust < 0.05)
 
 ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
   geom_tile(width = 1, height = 1)+
@@ -469,15 +474,17 @@ ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
   geom_text(aes(label = Count), colour = "white")+
   facet_grid(category ~ ., scales = "free_y", space = "free_y")+
   theme(panel.grid = element_blank(),
-        plot.margin = margin(r=2.5, l=0.6, t=0.3, b=0.2, unit = "in"),
-        axis.text.x = element_text(size = 14, face = "bold", colour = "navy"),
+        plot.margin = margin(r=.5, l=.2, t=.2, b=.2, unit = "in"),
+        axis.text.x = element_text(size = 11, face = "bold", colour = "navy", angle = 30),
         axis.title = element_blank(),
-        strip.background = element_rect(fill = "gold"),
+        strip.background = element_rect(fill = "darkgreen"),
         strip.clip = "inherit",
-        strip.text = element_text(size = 12, face = "bold", color = "navy"),
-        axis.text.y = element_text(size = 10, face = "bold", colour = "black"))
+        strip.text.y = element_text(size = 13, face = "bold", color = "white", angle = 0),
+        axis.text.y = element_text(size = 10, face = "bold", colour = "black"),
+        panel.spacing.y = unit(0.2, "lines"))
 ```
 
+And bellow to see the top 25 pathways clustered with hierarchical clustering.
 
 ```{r ,fig.height=10, fig.width=10}
 treeplot(xx_kegg, 
@@ -608,38 +615,308 @@ p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_Rcl1_vs_ICcl1 ∩ Up_ICcl1_vs_Dcl1`
 <p class='p3'>5- Shared terms between the 3 groups</p>
 
 ```{r}
-tmp <- list(`Rcl1-Dcl1` = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
-            `Rcl1-ICcl1` = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up,
-            `ICcl1-Dcl1` = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up)
+tmp_cl1 <- list(`R-D.cl1` = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
+               `R-IC.cl1` = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up,
+               `IC-D.cl1` = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up)
 
-xx <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
+for(i in names(tmp_cl1)){
+  tmp_ENTREZ[[paste0(i,"_ENTREZ")]] <- bitr(geneID = tmp_cl1[[i]],
+                                           fromType = "SYMBOL",
+                                           toType = "ENTREZID",
+                                           OrgDb = "org.Hs.eg.db")
+}
+
+xx_go <- compareCluster(tmp_cl1, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
+  pairwise_termsim()
+
+xx_kegg <- compareCluster(list(`R-D.cl1` = tmp_ENTREZ$`R-D.cl1_ENTREZ`$ENTREZID,
+                               `R-IC.cl1` = tmp_ENTREZ$`R-IC.cl1_ENTREZ`$ENTREZID,
+                               `IC-D.cl1` = tmp_ENTREZ$`IC-D.cl1_ENTREZ`$ENTREZID), 
+                          fun = "enrichKEGG", 
+                          organism = "hsa", 
+                          pvalueCutoff = 0.05) %>% 
   pairwise_termsim()
 ```
 
-```{r ,fig.height=13, fig.width=10, echo=TRUE}
-treeplot(xx, 
-         showCategory = 35, 
-         cex_category = 4,
+-   Using GO database :
+
+```{r ,fig.height=10, fig.width=10}
+treeplot(xx_go, 
+         showCategory = 25, 
          hilight = F,
-         fontsize = 4,
-         offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.45),
+         fontsize = 3.5,
+         offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.15, extend = 0.4),
          cluster.params = list(n= 8,
                                method = "ward.D",
                                color = MyPalette,
                                label_words_n = 2,
                                label_format = 10),
          clusterPanel.params = list(clusterPanel = "heatMap",
-                                    pie = "equal",
+                                    pie = "count",
                                     legend_n = 5,
-                                    colnames_angle = 35),
-         align_tiplab = F)+
-  # scale_color_manual(values = MyPalette)+
+                                    colnames_angle = 60))+
+  # scale_colour_manual(values = MyPalette)+
   theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
+        legend.text = element_text(size = 12, colour = "black"))
+```
+
+-   Using KEGG database :
+
+```{r ,rows.print=10}
+xx_kegg@compareClusterResult
+```
+
+The pathways are divided into categories and subcategories, the following bar plot bellow describes the different categories we have. 
+
+```{r ,fig.height=7, fig.width=10}
+xx_kegg@compareClusterResult %>% 
+  dplyr::count(category, subcategory) %>% 
+  ggplot()+
+  geom_bar(aes(x= category, y= n, fill= subcategory),
+           stat = "identity",
+           position = "stack",
+           width = 0.7)+
+  theme_bw()+
+  labs(y= "",
+       x= "Categories")+
+  theme(panel.grid.minor = element_blank(),
+        legend.title = element_text(size = 15, colour = "darkred", face = "bold"),
         legend.text = element_text(size = 12, colour = "black"),
-        plot.margin = margin(b=0.1, unit = "in"))
+        axis.title.x = element_text(size = 15, colour = "darkred", face = "bold", margin = margin(t=0.1, unit = "in")),
+        axis.text = element_text(size = 12, colour = "navy", face = "bold"),
+        axis.text.x = element_text(angle = 10),
+        legend.margin = margin(t=0.3, unit = "in"))+
+  scale_y_continuous(breaks = c(10, 20, 30, 40, 50))+
+  scale_fill_manual(values = c(MyPalette, "#ffbbbb", "#ffffbb", "#ffbbff", "#bbffff"))+
+  guides(fill = guide_legend(title = "Subcategories",
+                             position = "right",
+                             ncol = 1,
+                             override.aes = list(colour = "white", size = 3.5)))
+```
+
+And now, to see the terms associated in each category.
+
+__RichFactor__ refers to the ratio between the __number of genes__ from my list of interest and the __size of the enriched pathway__. And the the numbers inside the tiles refer to the number of genes from my list.
+
+```{r ,fig.height=14, fig.width=10}
+dat <- xx_kegg@compareClusterResult %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+  dplyr::filter(p.adjust < 0.05)
+
+ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
+  geom_tile(width = 1, height = 1)+
+  scale_fill_gradientn(colours = c("#ffbbbb", "#ffaa55", "#993300", "#550000"),
+                       values = c(0, 0.25, 0.7, 1),
+                       guide = guide_colorbar(barwidth = 1.2, barheight = 8))+
+  theme_bw()+
+  geom_text(aes(label = Count), colour = "white")+
+  facet_grid(category ~ ., scales = "free_y", space = "free_y")+
+  theme(panel.grid = element_blank(),
+        plot.margin = margin(r=.5, l=.2, t=.2, b=.2, unit = "in"),
+        axis.text.x = element_text(size = 11, face = "bold", colour = "navy", angle = 30),
+        axis.title = element_blank(),
+        strip.background = element_rect(fill = "darkgreen"),
+        strip.clip = "inherit",
+        strip.text.y = element_text(size = 13, face = "bold", color = "white", angle = 0),
+        axis.text.y = element_text(size = 10, face = "bold", colour = "black"),
+        panel.spacing.y = unit(0.2, "lines"))
+```
+
+And bellow to see the top 25 pathways clustered with hierarchical clustering.
+
+```{r ,fig.height=10, fig.width=10}
+treeplot(xx_kegg, 
+         showCategory = 25, 
+         hilight = F,
+         fontsize = 3.5,
+         offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.4),
+         cluster.params = list(n= 8,
+                               method = "ward.D",
+                               color = MyPalette,
+                               label_words_n = 2,
+                               label_format = 10),
+         clusterPanel.params = list(clusterPanel = "heatMap",
+                                    pie = "count",
+                                    legend_n = 5,
+                                    colnames_angle = 60))+
+  # scale_colour_manual(values = MyPalette)+
+  theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
+        legend.text = element_text(size = 12, colour = "black"))
 ```
 
 
+
+
+
+## Combined analysis
+
+Comparing all 6 enrichments
+
+```{r}
+tmp <- append(tmp, tmp_cl1)
+
+xx_go <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
+  pairwise_termsim()
+
+xx_kegg <- compareCluster(list(`R-D` = tmp_ENTREZ$`R-D_ENTREZ`$ENTREZID,
+                               `R-IC` = tmp_ENTREZ$`R-IC_ENTREZ`$ENTREZID,
+                               `IC-D` = tmp_ENTREZ$`IC-D_ENTREZ`$ENTREZID,
+                               `R-D.cl1` = tmp_ENTREZ$`R-D.cl1_ENTREZ`$ENTREZID,
+                               `R-IC.cl1` = tmp_ENTREZ$`R-IC.cl1_ENTREZ`$ENTREZID,
+                               `IC-D.cl1` = tmp_ENTREZ$`IC-D.cl1_ENTREZ`$ENTREZID), 
+                          fun = "enrichKEGG", 
+                          organism = "hsa", 
+                          pvalueCutoff = 0.05) %>% 
+  pairwise_termsim()
+```
+
+
+### Using GO database
+
+-   Enrichment map plot
+
+```{r ,fig.width=10, fig.height=10}
+emapplot(xx_go, 
+         showCategory = 15,
+         edge.params = list(show = TRUE, min = 0.3),
+         layout.params = list(layout = "kk", coords = NULL),
+         cluster.params = list(cluster = FALSE, method = stats::kmeans, n = NULL, 
+                               legend = FALSE, label_style = "shadowtext", label_words_n = 4, 
+                               label_format = 30),
+         cex.params = list(category_node = 1.5, category_label = 1.5, line = 1, pie2axis = 1, label_group = 1))+
+  scale_fill_manual(values = MyPalette)
+```
+
+-   Cnetwork plot
+
+```{r ,fig.width=10, fig.height=10}
+
+cnetplot(xx_go,
+         showCategory = 5,
+         cex.params = list(category_node = 1.5, gene_node = 1, category_label = 1, gene_label = 1))
+```
+
+-   Treeplot
+
+```{r ,fig.height=10, fig.width=10}
+treeplot(xx_go, 
+         showCategory = 25, 
+         hilight = F,
+         fontsize = 3.5,
+         offset.params = list(bar_tree = rel(2.5), tiplab = rel(1), hexpand = 0.02, extend = 0.2),
+         cluster.params = list(n= 8,
+                               method = "ward.D",
+                               color = MyPalette,
+                               label_words_n = 2,
+                               label_format = 10),
+         clusterPanel.params = list(clusterPanel = "heatMap",
+                                    pie = "count",
+                                    legend_n = 5,
+                                    colnames_angle = 60))+
+  theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
+        legend.text = element_text(size = 12, colour = "black"))
+```
+
+
+
+### Using KEGG database
+
+__RichFactor__ refers to the ratio between the __number of genes__ from my list of interest and the __size of the enriched pathway__. And the the numbers inside the tiles refer to the number of genes from my list.
+
+```{r ,fig.height=14, fig.width=10}
+dat <- xx_kegg@compareClusterResult %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+  dplyr::filter(p.adjust < 0.05)
+
+ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
+  geom_tile(width = 1, height = 1)+
+  scale_fill_gradientn(colours = c("#ffbbbb", "#ffaa55", "#993300", "#550000"),
+                       values = c(0, 0.25, 0.7, 1),
+                       guide = guide_colorbar(barwidth = 1.2, barheight = 8))+
+  theme_bw()+
+  geom_text(aes(label = Count), colour = "white", size = 3.5)+
+  facet_grid(category ~ ., scales = "free_y", space = "free_y")+
+  theme(panel.grid = element_blank(),
+        plot.margin = margin(r=.2, l=.2, t=.2, b=.2, unit = "in"),
+        axis.text.x = element_text(size = 10, face = "bold", colour = "navy", angle = 45),
+        axis.title = element_blank(),
+        strip.background = element_rect(fill = "darkgreen"),
+        strip.clip = "inherit",
+        strip.text.y = element_text(size = 13, face = "bold", color = "white", angle = 0),
+        axis.text.y = element_text(size = 10, face = "bold", colour = "black"),
+        panel.spacing.y = unit(0.2, "lines"))
+```
+
+
+
+
+
+
+```{r ,eval=FALSE}
+
+## Ranking the genes !!!! 
+
+toptable <- Markers1_lib1$lib1_allR_vs_D$DEA_res
+
+toptable %>% 
+  dplyr::mutate(p_val_adj = p_val_adj+ 1e-280) %>% 
+  dplyr::select(Genes,
+                avg_log2FC,
+                p_val_adj) %>% 
+  dplyr::mutate(ranking = ifelse(p_val_adj < 1e-30, 
+                                 (avg_log2FC*(-log10(1e-30)))/20,
+                                 ifelse(p_val_adj < 1e-5,
+                                        (avg_log2FC*(-log10(1e-10)))/20,
+                                        avg_log2FC*-log10(p_val_adj)/20))) %>% 
+  dplyr::arrange(desc(ranking)) -> RankingData1
+
+conv.allGenes <- bitr(RankingData1$Genes, 
+                      fromType = "SYMBOL",
+                      toType = "ENTREZID",
+                      OrgDb = "org.Hs.eg.db") %>% 
+  dplyr::mutate(Genes = SYMBOL) %>% 
+  dplyr::inner_join(RankingData1, by = "Genes")
+
+RankingData <- conv.allGenes %>% dplyr::select(Genes, ENTREZID, avg_log2FC, p_val_adj, ranking)
+
+List_AllRankedGenes <- list() 
+
+List_AllRankedGenes[["ENTREZID"]] <- RankingData$ranking %>% setNames(RankingData$ENTREZID)
+List_AllRankedGenes[["ENTREZID_FC"]] <- RankingData$avg_log2FC %>% setNames(RankingData$ENTREZID)
+
+
+## Background genes !!!! 
+
+List_BG <- list()
+
+List_BG[["GO_bg"]] <- List_AllRankedGenes[["ENTREZID"]][names(List_AllRankedGenes[["ENTREZID"]]) %in% 
+                                                        keys(org.Hs.eg.db, keytype = "ENTREZID")]
+
+
+## RUN GSEA
+
+gsea.go <- gseGO(geneList     = List_AllRankedGenes[["ENTREZID"]],
+                 OrgDb        = org.Hs.eg.db,
+                 ont          = "BP",
+                 minGSSize    = 50,
+                 maxGSSize    = 1000,
+                 pvalueCutoff = 0.05,
+                 verbose      = FALSE)
+
+gsea.go <- setReadable(gsea.go, 'org.Hs.eg.db', 'ENTREZID')
+
+dotplot(gsea.go, showCategory=13, color = "p.adjust", x="NES")
+
+ridgeplot(gsea.go, showCategory = 15)+theme(axis.text.y = element_text(size = 12))
+
+gseaplot(gsea.go, geneSetID = 1, by = "runningScore", title = gsea.go@result$Description[1])
+gseaplot(gsea.go, geneSetID = 1, by = "preranked", title = gsea.go@result$Description[1])
+gseaplot(gsea.go, geneSetID = 1, title = gsea.go@result$Description[1])
+
+
+gseaplot2(gsea.go, geneSetID = 1, title = gsea.go$Description[1])
+gseaplot2(gsea.go, geneSetID = 1:3)
+```
 
 
 
