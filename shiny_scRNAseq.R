@@ -1668,14 +1668,15 @@ server <- function(input, output, session){
       Up = Up_Genes(),
       Down = Down_Genes(),
       All = c(Up_Genes(), Down_Genes()),
-      All_FC = fc
+      All_FC = fc,
+      DEA_res = res
     )
     
     current_list <- List_markers()
     current_list[[input$name.list]] <- tmp_list
     List_markers(current_list)
     
-    showNotification(paste0(input$name.list, " added to the list"), type = "message", duration = 10)
+    showNotification(paste0(input$name.list, " added to the list"), type = "message", duration = 5)
   })
   
   output$list_markers <- renderPrint({
