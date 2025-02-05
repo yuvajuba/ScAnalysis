@@ -1202,6 +1202,9 @@ server <- function(input, output, session){
     message(sprintf("%-25s: %s", "Min.log2FC.threshold", input$log2fc))
     message(sprintf("%-25s: %s", "Min.pct.threshold", input$min.pct))
     message(sprintf("%-25s: %s", "Min.diff.pct", input$min.diff.pct))
+    message(sprintf("%-25s: %s", "p_val_adj cutoff", "0.05"))
+    message("==========================================")
+    message("Raw DEA is running on the background with no filtering")
     message("==========================================")
   })
   
@@ -1234,6 +1237,22 @@ server <- function(input, output, session){
       rownames_to_column(var = "Genes") 
   })
   
+  DEA_raw <- eventReactive(input$act2, {
+    req(seurat())
+    seurat <- seurat()
+    Idents(seurat) <- as.factor(seurat@meta.data[[input$Sel.metadata]])
+    seurat %>% 
+      FindMarkers(ident.1 = input$ident.1,
+                  ident.2 = input$ident.2,
+                  only.pos = FALSE,
+                  min.pct = 0,
+                  min.diff.pct = 0,
+                  logfc.threshold = 0,
+                  verbose = F) %>% 
+      dplyr::arrange(desc(avg_log2FC)) %>%
+      rownames_to_column(var = "Genes") 
+  })
+  
   ## 4- Initiate reactive values      ----------------------------------------------
   Up_Genes <- reactiveVal(character(0))
   Down_Genes <- reactiveVal(character(0))
@@ -1262,6 +1281,11 @@ server <- function(input, output, session){
                  dplyr::filter(avg_log2FC < 0) %>% 
                  dplyr::arrange(avg_log2FC) %>% 
                  dplyr::pull(Genes))
+  })
+  
+  observeEvent(DEA_raw(), {
+    req(DEA_raw())
+    showNotification("Raw DEA results completed from the background !!")
   })
   
   ## 5- Displaying results      ---------------------------------------------------
@@ -1659,7 +1683,7 @@ server <- function(input, output, session){
   
   # Fill the list:
   observeEvent(input$add.markers, {
-    req(DEA_results())
+    req(DEA_results(), DEA_raw())
     
     res <- DEA_results()
     fc <- res[["avg_log2FC"]] %>% setNames(res[["Genes"]])
@@ -1669,7 +1693,8 @@ server <- function(input, output, session){
       Down = Down_Genes(),
       All = c(Up_Genes(), Down_Genes()),
       All_FC = fc,
-      DEA_res = res
+      DEA_res = res,
+      all_DEA = DEA_raw()
     )
     
     current_list <- List_markers()
