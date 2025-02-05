@@ -31,6 +31,8 @@ library(clusterProfiler)
 library(org.Hs.eg.db)
 library(AnnotationDbi)
 library(enrichplot)
+library(msigdbr)
+library(fgsea)
 library(purrr)
 library(ggvenn)
 library(forcats)
@@ -224,14 +226,14 @@ Display_Venn <- function(Markers,
 
 ```{r ,echo=TRUE}
 Markers1_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-Markers-logfc0.5-minpct0.25-diffpct0.rds")
-Markers2_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
+# Markers2_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
 # Markers1_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-Markers-logfc0.5-minpct0.25-diffpct0.rds")
 # Markers2_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
 # Markers1_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-Markers-logfc0.5-minpct0.25-diffpct0.rds")
 # Markers2_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-Markers-logfc0.5-minpct0.25-diffpct0.3.rds")
 
 GOobj1_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
-GOobj2_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
+# GOobj2_lib1 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/Out_objects/Lib1-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
 # GOobj1_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
 # GOobj2_lib2 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library2/Out_objects/Lib2-GOobj-logfc0.5-minpct0.25-diffpct0.3.rds")
 # GOobj1_lib3 <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library3/Out_objects/Lib3-GOobj-logfc0.5-minpct0.25-diffpct0.rds")
@@ -260,20 +262,243 @@ cat(names(Markers1_lib1), sep = "\n")
 
 
 
-# Lib1 inner inspection
+# I- Library1 inspection
 
 <p class='important'>We will inspect the genes inside library1, comparing between the clusters and the clonotypes etc...</p>
 
-## Clonotypes free comparison
+```{r ,fig.width=10}
+seu <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/SeuratObjects/Seurat3.rds")
+DimPlot(seu, group.by = "MyClusters", cols = MyPalette, split.by = "hash.ID")
+DimPlot(seu, group.by = "TopClones", cols = MyPalette, split.by = "hash.ID")
+```
 
-<p class='important'>First, let's match the DEGs between the different clusters (without taking into account the clonotypes)</p>
+## 1- Paired comparison {.tabset .tabset-pills}
 
+<p class='important'>First, we will review the DEGs between the different clusters 2 by 2, then we'll enrich each list of gene to see the terms they enrich, using for that both an __over representative analysis__ (ORA) and __gene set enrichment analysis__ (GSEA), and using both GO and KEGG database (eventually some libraries from MsigDB)</p>
 
-<p class='p3'>1-1- Top100 UpGenes from General conditions (all relapse __vs__ all diagnosis)</p>
+<p class='p1'>The corresponding abbreviations are used :</p>
+
+-   __R__ : All cells at relapse
+-   __allD__ : All cells at diagnosis (including the intermediate cluster)
+-   __D__ : cells at diagnosis (without the intermediate cluster)
+-   __IC__ : cells at diagnosis from the intermediate cluster
+-   __Rcl1__ : cells at relapse assigned to clonotype1
+-   __Dcl1__ : cells at diagnosis assigned to clonotype1
+-   __ICcl1__ : cells from the intermediate cluster assigned to clonotype1
+
+**RichFactor** : is the ratio between the number of my genes of interest that belong to a pathway and the size of that pathway
+
+### R-allD
+
+#### Over Representative Analysis (ORA)
+
+<p class='p3'>Top50 UpGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_R_vs_D$Up %>% head(100)
+Markers1_lib1$lib1_allR_vs_allD$Up %>% head(50)
 ```
+
+<p class='p3'>Enriched terms with the upgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_R_vs_D_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_D_Up, 
+                     showCategory = 20, 
+                     foldChange = Markers1_lib1$lib1_allR_vs_allD$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8),
+        axis.text = element_text(face = "bold"))+
+  scale_fill_gradientn(colours = c("white","black"), values = c(0,1))
+```
+
+
+<p class='p3'>Top50 DownGenes</p>
+
+```{r}
+Markers1_lib1$lib1_allR_vs_allD$Down %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the downgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_R_vs_D_Down@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_D_Down, 
+                     showCategory = 15, 
+                     foldChange = Markers1_lib1$lib1_allR_vs_allD$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8, face = "bold"),
+        axis.text.y = element_text(face = "bold", size = 10))+
+  scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
+```
+
+#### Gene Set Enrichment Analysis (GSEA)
+
+```{r}
+
+## Ranking the genes :
+######################
+List_AllRankedGenes <- list()
+for(i in names(Markers1_lib1)){
+  dat <- Markers1_lib1[[i]][["all_DEA"]] %>% 
+    dplyr::mutate(p_val_adj = p_val_adj+ 1e-280) %>% 
+    dplyr::select(Genes,
+                avg_log2FC,
+                p_val_adj) %>% 
+    dplyr::mutate(ranking = ifelse(p_val_adj < 1e-30, 
+                                 (avg_log2FC*(-log10(1e-30)))/20,
+                                 ifelse(p_val_adj < 1e-5,
+                                        (avg_log2FC*(-log10(1e-10)))/20,
+                                        avg_log2FC*-log10(p_val_adj)/20))) %>% 
+    dplyr::arrange(desc(ranking))
+  
+  rankingdata <- bitr(dat$Genes, 
+                      fromType = "SYMBOL",
+                      toType = "ENTREZID",
+                      OrgDb = "org.Hs.eg.db") %>% 
+    dplyr::mutate(Genes = SYMBOL) %>% 
+    dplyr::inner_join(dat, by = "Genes")
+  
+  List_AllRankedGenes[[i]] <- rankingdata$ranking %>% setNames(rankingdata$ENTREZID)
+}
+
+## Background genes :
+#####################
+# We will make a list of raw backgrounds with all the genes from different database 
+# and then when we analyse we will restrict the list to the genes of interest
+List_BG <- list()
+List_BG[["GO_genes"]] <- keys(org.Hs.eg.db, keytype = "ENTREZID")
+List_BG[["KEGG_genes"]] <- bitr(keys(org.Hs.eg.db, keytype = "ENTREZID"),
+                                fromType = "ENTREZID",
+                                toType = "PATH",
+                                OrgDb = "org.Hs.eg.db")$ENTREZID
+List_BG[["MsigDB_H"]] <- msigdbr(category = "H")$entrez_gene %>% as.character()
+List_BG[["MsigDB_C2.cp"]] <- msigdbr(category = "C2", subcategory = "CP")$entrez_gene %>% as.character()
+List_BG[["MsigDB_C6"]] <- msigdbr(category = "C6")$entrez_gene %>% as.character()
+```
+
+<p class='important'>Using the GO database for background genes</p>
+
+```{r}
+gsea.go.bp <- gseGO(geneList  = List_AllRankedGenes$lib1_allR_vs_allD,
+                 OrgDb        = org.Hs.eg.db,
+                 ont          = "BP",
+                 minGSSize    = 50,
+                 maxGSSize    = 1000,
+                 pvalueCutoff = 0.05,
+                 verbose      = FALSE) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+gsea.go.bp@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+```
+
+```{r ,fig.height=9, fig.width=8}
+dotplot(gsea.go.bp, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+```
+
+To pick up some pathways :
+
+-   Mostly enriched with up-regulated genes
+
+```{r ,fig.width=10}
+gseaplot2(gsea.go.bp, geneSetID = c("GO:0002292", "GO:0002367", "GO:1902106", "GO:0032640"), 
+          color = MyPalette[1:4], pvalue_table = F, subplots = 1:2, base_size = 13, rel_heights = c(2,0.5,1))
+```
+
+-   Mostly enriched with down-regulated genes
+
+```{r ,fig.width=10}
+gseaplot2(gsea.go.bp, geneSetID = c("GO:1903046", "GO:0098813", "GO:0000075", "GO:0000725"), 
+          color = MyPalette[1:4], pvalue_table = F, subplots = 1:2, base_size = 14, rel_heights = c(2,0.5,1))
+```
+
+
+
+<p class='important', style='margin-top:40px'>Using the KEGG database for background genes</p>
+
+```{r}
+gsea.kegg <- gseKEGG(geneList = List_AllRankedGenes$lib1_allR_vs_allD,
+                        maxGSSize = 1000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+```
+
+```{r ,fig.height=9, fig.width=8}
+dotplot(gsea.kegg, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+```
+
+To pick up some pathways :
+
+-   Mostly enriched with up-regulated genes
+
+```{r ,fig.width=10}
+gseaplot2(gsea.kegg, geneSetID = c("hsa05330", "hsa04630", "hsa04014", "hsa04659"), 
+          color = MyPalette[1:4], pvalue_table = F, subplots = 1:2, base_size = 13, rel_heights = c(2,0.5,1))
+```
+
+-   Mostly enriched with down-regulated genes
+
+```{r ,fig.width=10}
+gseaplot2(gsea.kegg, geneSetID = c("hsa04110", "hsa04814", "hsa01200", "hsa00270"), 
+          color = MyPalette[1:4], pvalue_table = F, subplots = 1:2, base_size = 14, rel_heights = c(2,0.5,1))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 <p class='p3'>1-2- Corresponding enriched terms (filtered by significance)</p>
 
