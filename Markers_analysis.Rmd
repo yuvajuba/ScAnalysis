@@ -362,7 +362,9 @@ for(i in names(Markers1_lib1)){
                                  (avg_log2FC*(-log10(1e-30)))/20,
                                  ifelse(p_val_adj < 1e-5,
                                         (avg_log2FC*(-log10(1e-10)))/20,
-                                        avg_log2FC*-log10(p_val_adj)/20))) %>% 
+                                        ifelse(p_val_adj < 0.1,
+                                               (avg_log2FC*(-log10(p_val_adj)))/20,
+                                               0)))) %>% 
     dplyr::arrange(desc(ranking))
   
   rankingdata <- bitr(dat$Genes, 
@@ -388,6 +390,10 @@ List_BG[["KEGG_genes"]] <- bitr(keys(org.Hs.eg.db, keytype = "ENTREZID"),
 List_BG[["MsigDB_H"]] <- msigdbr(category = "H")$entrez_gene %>% as.character()
 List_BG[["MsigDB_C2.cp"]] <- msigdbr(category = "C2", subcategory = "CP")$entrez_gene %>% as.character()
 List_BG[["MsigDB_C6"]] <- msigdbr(category = "C6")$entrez_gene %>% as.character()
+
+## List gsea objects :
+######################
+GSEAobj_list <- list(Lib1 = list(), Lib2 = list(), Lib3 = list())
 ```
 
 <p class='important'>Using the GO database for background genes</p>
@@ -406,7 +412,11 @@ gsea.go.bp <- gseGO(geneList  = List_AllRankedGenes$lib1_allR_vs_allD,
 The enriched biological processes :
 
 ```{r ,rows.print=6}
-gsea.go.bp@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+if(nrow(gsea.go.bp@result) != 0){
+  gsea.go.bp@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
 ```
 
 ```{r ,fig.height=9, fig.width=8}
@@ -469,138 +479,870 @@ gseaplot2(gsea.kegg, geneSetID = c("hsa04110", "hsa04814", "hsa01200", "hsa00270
           color = MyPalette[1:4], pvalue_table = F, subplots = 1:2, base_size = 14, rel_heights = c(2,0.5,1))
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<p class='p3'>1-2- Corresponding enriched terms (filtered by significance)</p>
-
-```{r ,rows.print=10}
-GOobj1_lib1$GOobj_lib1_R_vs_D_Up@result %>% 
-  dplyr::filter(p.adjust < 0.05) %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-  dplyr::arrange(desc(RichFactor)) %>% 
-  as_tibble()
+```{r}
+GSEAobj_list$Lib1[["R-allD"]] <- list(go = gsea.go.bp, 
+                                      kegg = gsea.kegg)
 ```
 
 
-<p class='p3'>2-1- Top100 UpGenes from all relapse __vs__ diagnosis (without IC)</p>
+
+
+
+### R-D
+
+#### Over Representative Analysis (ORA)
+
+<p class='p3'>Top50 UpGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_R_vs_D_ICfree$Up %>% head(100)
+Markers1_lib1$lib1_allR_vs_D$Up %>% head(50)
 ```
 
-<p class='p3'>2-2- Corresponding enriched terms (filtered by significance)</p>
+<p class='p3'>Enriched terms with the upgenes</p>
 
-```{r ,rows.print=10}
+```{r ,rows.print=6}
 GOobj1_lib1$GOobj_lib1_R_vs_D_ICfree_Up@result %>% 
   dplyr::filter(p.adjust < 0.05) %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
   dplyr::arrange(desc(RichFactor)) %>% 
   as_tibble()
 ```
 
-<p class='p3'>3-1- UpGenes from all relapse __vs__ IC</p>
-
-```{r}
-Markers1_lib1$lib1_R_vs_IC$Up
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_D_ICfree_Up, 
+                     showCategory = 20, 
+                     foldChange = Markers1_lib1$lib1_allR_vs_D$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8),
+        axis.text = element_text(face = "bold"))+
+  scale_fill_gradientn(colours = c("white","black"), values = c(0,1))
 ```
 
-<p class='p3'>3-2- Corresponding enriched terms (filtered by significance)</p>
 
-```{r ,rows.print=10}
-GOobj1_lib1$GOobj_lib1_R_vs_IC_Up@result %>% 
+<p class='p3'>Top50 DownGenes</p>
+
+```{r}
+Markers1_lib1$lib1_allR_vs_D$Down %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the downgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_R_vs_D_ICfree_Down@result %>% 
   dplyr::filter(p.adjust < 0.05) %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
   dplyr::arrange(desc(RichFactor)) %>% 
   as_tibble()
 ```
 
-<p class='p3'>4-1- UpGenes from IC __vs__ diagnosis</p>
-
-```{r}
-Markers1_lib1$lib1_IC_vs_D$Up
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_D_ICfree_Down, 
+                     showCategory = 15, 
+                     foldChange = Markers1_lib1$lib1_allR_vs_D$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8, face = "bold"),
+        axis.text.y = element_text(face = "bold", size = 10))+
+  scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
 ```
 
-<p class='p3'>4-2- Corresponding enriched terms (filtered by significance)</p>
+#### Gene Set Enrichment Analysis (GSEA)
 
-```{r ,rows.print=10}
+<p class='important'>Using the GO database for background genes</p>
+
+```{r}
+gsea.go.bp <- gseGO(geneList  = List_AllRankedGenes$lib1_allR_vs_D,
+                 OrgDb        = org.Hs.eg.db,
+                 ont          = "BP",
+                 minGSSize    = 50,
+                 maxGSSize    = 1000,
+                 pvalueCutoff = 0.05,
+                 verbose      = FALSE) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.go.bp@result) != 0){
+  gsea.go.bp@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+dotplot(gsea.go.bp, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+```
+
+To pick up some pathways :
+
+-   Mostly enriched with up-regulated genes
+
+```{r ,fig.width=10}
+gseaplot2(gsea.go.bp, geneSetID = c("GO:0002292", "GO:0046632", "GO:1902106", "GO:0032602"), 
+          color = MyPalette[1:4], pvalue_table = F, subplots = 1:2, base_size = 13, rel_heights = c(2,0.5,1))
+```
+
+-   Mostly enriched with down-regulated genes
+
+```{r ,fig.width=10}
+gseaplot2(gsea.go.bp, geneSetID = c("GO:1903046", "GO:0000070", "GO:0051784", "GO:0051321"), 
+          color = MyPalette[1:4], pvalue_table = F, subplots = 1:2, base_size = 14, rel_heights = c(2,0.5,1))
+```
+
+
+
+<p class='important', style='margin-top:40px'>Using the KEGG database for background genes</p>
+
+```{r}
+gsea.kegg <- gseKEGG(geneList = List_AllRankedGenes$lib1_allR_vs_D,
+                        maxGSSize = 1000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.kegg@result) != 0){
+  gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.kegg@result) != 0){
+  dotplot(gsea.kegg, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+}
+```
+
+To pick up some pathways :
+
+-   Mostly enriched with up-regulated genes
+
+```{r ,fig.width=10}
+gseaplot2(gsea.kegg, geneSetID = c("hsa05330", "hsa05321", "hsa04659", "hsa04014"), 
+          color = MyPalette[1:4], pvalue_table = F, subplots = 1:2, base_size = 13, rel_heights = c(2,0.5,1))
+```
+
+-   Mostly enriched with down-regulated genes
+
+```{r ,fig.width=10}
+gseaplot2(gsea.kegg, geneSetID = c("hsa04110", "hsa04814", "hsa01200", "hsa00270"), 
+          color = MyPalette[1:4], pvalue_table = F, subplots = 1:2, base_size = 14, rel_heights = c(2,0.5,1))
+```
+
+```{r}
+GSEAobj_list$Lib1[["R-D"]] <- list(go = gsea.go.bp, 
+                                   kegg = gsea.kegg)
+```
+
+
+
+
+### IC-D
+
+#### Over Representative Analysis (ORA)
+
+<p class='p3'>Top50 UpGenes</p>
+
+```{r}
+Markers1_lib1$lib1_IC_vs_D$Up %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the upgenes</p>
+
+```{r ,rows.print=6}
 GOobj1_lib1$GOobj_lib1_IC_vs_D_Up@result %>% 
   dplyr::filter(p.adjust < 0.05) %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
   dplyr::arrange(desc(RichFactor)) %>% 
   as_tibble()
 ```
 
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_IC_vs_D_Up, 
+                     showCategory = 20, 
+                     foldChange = Markers1_lib1$lib1_IC_vs_D$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8),
+        axis.text = element_text(face = "bold"))+
+  scale_fill_gradientn(colours = c("white","black"), values = c(0,1))
+```
 
-<p class='p3'>5- Differences between R-IC, R-D and IC-D</p>
+
+<p class='p3'>Top50 DownGenes</p>
 
 ```{r}
+Markers1_lib1$lib1_IC_vs_D$Down %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the downgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_IC_vs_D_Down@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_D_ICfree_Down, 
+                     showCategory = 15, 
+                     foldChange = Markers1_lib1$lib1_IC_vs_D$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8, face = "bold"),
+        axis.text.y = element_text(face = "bold", size = 10))+
+  scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
+```
+
+#### Gene Set Enrichment Analysis (GSEA)
+
+<p class='important'>Using the GO database for background genes</p>
+
+```{r}
+gsea.go.bp <- gseGO(geneList  = List_AllRankedGenes$lib1_IC_vs_D,
+                 OrgDb        = org.Hs.eg.db,
+                 ont          = "BP",
+                 minGSSize    = 50,
+                 maxGSSize    = 1000,
+                 pvalueCutoff = 0.05,
+                 verbose      = FALSE,
+                 nPermSimple = 10000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.go.bp@result) != 0){
+  gsea.go.bp@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.go.bp@result) != 0){
+  dotplot(gsea.go.bp, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+}
+```
+
+
+
+<p class='important', style='margin-top:40px'>Using the KEGG database for background genes</p>
+
+```{r}
+gsea.kegg <- gseKEGG(geneList = List_AllRankedGenes$lib1_IC_vs_D,
+                        maxGSSize = 1000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.kegg@result) != 0){
+  gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.kegg@result) != 0){
+  dotplot(gsea.kegg, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+}
+```
+
+
+```{r}
+GSEAobj_list$Lib1[["IC-D"]] <- list(go = gsea.go.bp, 
+                                    kegg = gsea.kegg)
+```
+
+
+
+
+
+
+
+### R-IC
+
+#### Over Representative Analysis (ORA)
+
+<p class='p3'>Top50 UpGenes</p>
+
+```{r}
+Markers1_lib1$lib1_allR_vs_IC$Up %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the upgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_R_vs_IC_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_IC_Up, 
+                     showCategory = 20, 
+                     foldChange = Markers1_lib1$lib1_allR_vs_IC$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8),
+        axis.text = element_text(face = "bold"))+
+  scale_fill_gradientn(colours = c("white","black"), values = c(0,1))
+```
+
+
+<p class='p3'>Top50 DownGenes</p>
+
+```{r}
+Markers1_lib1$lib1_allR_vs_IC$Down %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the downgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_R_vs_IC_Down@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_IC_Down, 
+                     showCategory = 15, 
+                     foldChange = Markers1_lib1$lib1_allR_vs_IC$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8, face = "bold"),
+        axis.text.y = element_text(face = "bold", size = 10))+
+  scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
+```
+
+#### Gene Set Enrichment Analysis (GSEA)
+
+<p class='important'>Using the GO database for background genes</p>
+
+```{r}
+gsea.go.bp <- gseGO(geneList  = List_AllRankedGenes$lib1_allR_vs_IC,
+                 OrgDb        = org.Hs.eg.db,
+                 ont          = "BP",
+                 minGSSize    = 50,
+                 maxGSSize    = 1000,
+                 pvalueCutoff = 0.05,
+                 verbose      = FALSE,
+                 nPermSimple = 10000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.go.bp@result) != 0){
+  gsea.go.bp@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.go.bp@result) != 0){
+  dotplot(gsea.go.bp, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+} 
+```
+
+
+
+<p class='important', style='margin-top:40px'>Using the KEGG database for background genes</p>
+
+```{r}
+gsea.kegg <- gseKEGG(geneList = List_AllRankedGenes$lib1_allR_vs_IC,
+                        maxGSSize = 1000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.kegg@result) != 0){
+  gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.kegg@result) != 0){
+  dotplot(gsea.kegg, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+}
+```
+
+
+```{r}
+GSEAobj_list$Lib1[["R-IC"]] <- list(go = gsea.go.bp, 
+                                   kegg = gsea.kegg)
+```
+
+
+
+
+
+
+
+### Rcl1-Dcl1
+
+#### Over Representative Analysis (ORA)
+
+<p class='p3'>Top50 UpGenes</p>
+
+```{r}
+Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the upgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_Rcl1_vs_Dcl1_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_Rcl1_vs_Dcl1_Up, 
+                     showCategory = 20, 
+                     foldChange = Markers1_lib1$lib1_Rcl1_vs_Dcl1$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8),
+        axis.text = element_text(face = "bold"))+
+  scale_fill_gradientn(colours = c("white","black"), values = c(0,1))
+```
+
+
+<p class='p3'>Top50 DownGenes</p>
+
+```{r}
+Markers1_lib1$lib1_Rcl1_vs_Dcl1$Down %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the downgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_Rcl1_vs_Dcl1_Down@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_Rcl1_vs_Dcl1_Down, 
+                     showCategory = 15, 
+                     foldChange = Markers1_lib1$lib1_Rcl1_vs_Dcl1$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8, face = "bold"),
+        axis.text.y = element_text(face = "bold", size = 10))+
+  scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
+```
+
+#### Gene Set Enrichment Analysis (GSEA)
+
+<p class='important'>Using the GO database for background genes</p>
+
+```{r}
+gsea.go.bp <- gseGO(geneList  = List_AllRankedGenes$lib1_Rcl1_vs_Dcl1,
+                 OrgDb        = org.Hs.eg.db,
+                 ont          = "BP",
+                 minGSSize    = 50,
+                 maxGSSize    = 1000,
+                 pvalueCutoff = 0.05,
+                 verbose      = FALSE,
+                 nPermSimple = 10000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.go.bp@result) != 0){
+  gsea.go.bp@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.go.bp@result) != 0){
+  dotplot(gsea.go.bp, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+} 
+```
+
+Let's view the pathways
+
+```{r ,fig.width=10}
+gseaplot2(gsea.go.bp, geneSetID = 1:11, 
+          color = MyPalette[1:11], pvalue_table = F, subplots = 1:2, base_size = 14, rel_heights = c(2,0.5,1))
+```
+
+
+
+<p class='important', style='margin-top:40px'>Using the KEGG database for background genes</p>
+
+```{r}
+gsea.kegg <- gseKEGG(geneList = List_AllRankedGenes$lib1_Rcl1_vs_Dcl1,
+                     maxGSSize = 1000,
+                     nPermSimple = 20000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.kegg@result) != 0){
+  gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.kegg@result) != 0){
+  dotplot(gsea.kegg, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+}
+```
+
+
+```{r}
+GSEAobj_list$Lib1[["Rcl1-Dcl1"]] <- list(go = gsea.go.bp, 
+                                         kegg = gsea.kegg)
+```
+
+
+
+
+
+
+
+### Rcl1-ICcl1
+
+#### Over Representative Analysis (ORA)
+
+<p class='p3'>Top50 UpGenes</p>
+
+```{r}
+Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the upgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_Rcl1_vs_ICcl1_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_Rcl1_vs_ICcl1_Up, 
+                     showCategory = 20, 
+                     foldChange = Markers1_lib1$lib1_Rcl1_vs_ICcl1$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8),
+        axis.text = element_text(face = "bold"))+
+  scale_fill_gradientn(colours = c("white","black"), values = c(0,1))
+```
+
+
+<p class='p3'>Top50 DownGenes</p>
+
+```{r}
+Markers1_lib1$lib1_Rcl1_vs_ICcl1$Down %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the downgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_Rcl1_vs_ICcl1_Down@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_Rcl1_vs_ICcl1_Down, 
+                     showCategory = 15, 
+                     foldChange = Markers1_lib1$lib1_Rcl1_vs_ICcl1$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8, face = "bold"),
+        axis.text.y = element_text(face = "bold", size = 10))+
+  scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
+```
+
+#### Gene Set Enrichment Analysis (GSEA)
+
+<p class='important'>Using the GO database for background genes</p>
+
+```{r}
+gsea.go.bp <- gseGO(geneList  = List_AllRankedGenes$lib1_Rcl1_vs_ICcl1,
+                 OrgDb        = org.Hs.eg.db,
+                 ont          = "BP",
+                 minGSSize    = 50,
+                 maxGSSize    = 1000,
+                 pvalueCutoff = 0.05,
+                 verbose      = FALSE,
+                 nPermSimple = 15000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.go.bp@result) != 0){
+  gsea.go.bp@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.go.bp@result) != 0){
+  dotplot(gsea.go.bp, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+} 
+```
+
+
+
+<p class='important', style='margin-top:40px'>Using the KEGG database for background genes</p>
+
+```{r}
+gsea.kegg <- gseKEGG(geneList = List_AllRankedGenes$lib1_Rcl1_vs_ICcl1,
+                     maxGSSize = 1000,
+                     nPermSimple = 20000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.kegg@result) != 0){
+  gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.kegg@result) != 0){
+  dotplot(gsea.kegg, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+}
+```
+
+
+```{r}
+GSEAobj_list$Lib1[["Rcl1-ICcl1"]] <- list(go = gsea.go.bp, 
+                                          kegg = gsea.kegg)
+```
+
+
+
+
+
+
+
+
+
+### ICcl1-Dcl1
+
+#### Over Representative Analysis (ORA)
+
+<p class='p3'>Top50 UpGenes</p>
+
+```{r}
+Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the upgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_ICcl1_vs_Dcl1_Up@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_ICcl1_vs_Dcl1_Up, 
+                     showCategory = 20, 
+                     foldChange = Markers1_lib1$lib1_ICcl1_vs_Dcl1$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8),
+        axis.text = element_text(face = "bold"))+
+  scale_fill_gradientn(colours = c("white","black"), values = c(0,1))
+```
+
+
+<p class='p3'>Top50 DownGenes</p>
+
+```{r}
+Markers1_lib1$lib1_ICcl1_vs_Dcl1$Down %>% head(50)
+```
+
+<p class='p3'>Enriched terms with the downgenes</p>
+
+```{r ,rows.print=6}
+GOobj1_lib1$GOobj_lib1_ICcl1_vs_Dcl1_Down@result %>% 
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),4)) %>% 
+  dplyr::select(Description, RichFactor, Count, BgRatio) %>% 
+  dplyr::arrange(desc(RichFactor)) %>% 
+  as_tibble()
+```
+
+```{r ,fig.height=8, fig.width=10}
+enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_ICcl1_vs_Dcl1_Down, 
+                     showCategory = 15, 
+                     foldChange = Markers1_lib1$lib1_ICcl1_vs_Dcl1$All_FC)+
+  theme(axis.text.x = element_text(angle = 90, size = 8, face = "bold"),
+        axis.text.y = element_text(face = "bold", size = 10))+
+  scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
+```
+
+#### Gene Set Enrichment Analysis (GSEA)
+
+<p class='important'>Using the GO database for background genes</p>
+
+```{r}
+gsea.go.bp <- gseGO(geneList  = List_AllRankedGenes$lib1_ICcl1_vs_Dcl1,
+                 OrgDb        = org.Hs.eg.db,
+                 ont          = "BP",
+                 minGSSize    = 50,
+                 maxGSSize    = 1000,
+                 pvalueCutoff = 0.05,
+                 verbose      = FALSE,
+                 nPermSimple = 15000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.go.bp@result) != 0){
+  gsea.go.bp@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.go.bp@result) != 0){
+  dotplot(gsea.go.bp, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+} 
+```
+
+
+
+<p class='important', style='margin-top:40px'>Using the KEGG database for background genes</p>
+
+```{r}
+gsea.kegg <- gseKEGG(geneList = List_AllRankedGenes$lib1_ICcl1_vs_Dcl1,
+                     maxGSSize = 1000,
+                     nPermSimple = 20000) %>% 
+  setReadable(OrgDb = 'org.Hs.eg.db', keyType = "ENTREZID")
+```
+
+The enriched biological processes :
+
+```{r ,rows.print=6}
+if(nrow(gsea.kegg@result) != 0){
+  gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
+} else {
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+}
+```
+
+```{r ,fig.height=9, fig.width=8}
+if(nrow(gsea.kegg@result) != 0){
+  dotplot(gsea.kegg, showCategory=20, color = "p.adjust", x="NES")+
+  scale_size_continuous(range = c(2,5))+
+  theme(axis.text.y = element_text(face = "bold"))
+}
+```
+
+
+```{r}
+GSEAobj_list$Lib1[["ICcl1-Dcl1"]] <- list(go = gsea.go.bp, 
+                                          kegg = gsea.kegg)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r ,eval=FALSE}
+
 p <- Display_Venn(Markers = list(Up_R_vs_IC = Markers1_lib1$lib1_R_vs_IC$Up,
                                  Up_R_vs_D = Markers1_lib1$lib1_R_vs_D_ICfree$Up,
                                  Up_IC_vs_D = Markers1_lib1$lib1_IC_vs_D$Up),
                   Padding = 0.05)
 
 p$plot
-```
-
-<p class='important'>We have 286 up regulated genes from R-D</p>
-
--   29 common genes with IC-D
-
-```{r}
 p$intersections$`Up_R_vs_D ∩ Up_IC_vs_D`
-```
-
--   106 common genes with R-IC
-
-```{r}
 p$intersections$`Up_R_vs_IC ∩ Up_R_vs_D`
-```
-
--   3 common genes between the 3 lists
-
-```{r}
 p$intersections$`Up_R_vs_IC ∩ Up_R_vs_D ∩ Up_IC_vs_D`
-```
 
 <p class='p2'>his means that from diagnosis (D) to the intermediate cluster (IC), we observe 29 genes that are up-regulated. From IC to relapse (R), 3 of these previously up-regulated genes maintained their up-regulation, alongside 103 additional genes. Furthermore, 154 genes were uniquely up-regulated in the R-D analysis, suggesting that this regulation likely occurred after the blood was sampled for the analysis.</p>
-
-
-<p class='p3'>6- Shared terms between R-IC, R-D and IC-D</p>
-
-```{r}
+  
 tmp <- list(`R-D` = Markers1_lib1$lib1_R_vs_D$Up,
             `R-IC` = Markers1_lib1$lib1_R_vs_IC$Up,
             `IC-D` = Markers1_lib1$lib1_IC_vs_D$Up)
@@ -623,11 +1365,7 @@ xx_kegg <- compareCluster(list(`R-D` = tmp_ENTREZ$`R-D_ENTREZ`$ENTREZID,
                           organism = "hsa", 
                           pvalueCutoff = 0.05) %>% 
   pairwise_termsim()
-```
 
--   Using GO database :
-
-```{r ,fig.height=10, fig.width=10}
 treeplot(xx_go, 
          showCategory = 25, 
          hilight = F,
@@ -645,17 +1383,9 @@ treeplot(xx_go,
   # scale_colour_manual(values = MyPalette)+
   theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
         legend.text = element_text(size = 12, colour = "black"))
-```
 
--   Using KEGG database :
-
-```{r ,rows.print=10}
 xx_kegg@compareClusterResult
-```
 
-The pathways are divided into categories and subcategories, the following bar plot bellow describes the different categories we have. 
-
-```{r ,fig.height=7, fig.width=10}
 xx_kegg@compareClusterResult %>% 
   dplyr::count(category, subcategory) %>% 
   ggplot()+
@@ -679,56 +1409,62 @@ xx_kegg@compareClusterResult %>%
                              position = "right",
                              ncol = 1,
                              override.aes = list(colour = "white", size = 3.5)))
-```
 
 And now, to see the terms associated in each category.
 
 __RichFactor__ refers to the ratio between the __number of genes__ from my list of interest and the __size of the enriched pathway__. And the the numbers inside the tiles refer to the number of genes from my list.
 
-```{r ,fig.height=14, fig.width=10}
-dat <- xx_kegg@compareClusterResult %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-  dplyr::filter(p.adjust < 0.05)
 
-ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
-  geom_tile(width = 1, height = 1)+
-  scale_fill_gradientn(colours = c("#ffbbbb", "#ffaa55", "#993300", "#550000"),
-                       values = c(0, 0.25, 0.7, 1),
-                       guide = guide_colorbar(barwidth = 1.2, barheight = 8))+
-  theme_bw()+
-  geom_text(aes(label = Count), colour = "white")+
-  facet_grid(category ~ ., scales = "free_y", space = "free_y")+
-  theme(panel.grid = element_blank(),
-        plot.margin = margin(r=.5, l=.2, t=.2, b=.2, unit = "in"),
-        axis.text.x = element_text(size = 11, face = "bold", colour = "navy", angle = 30),
-        axis.title = element_blank(),
-        strip.background = element_rect(fill = "darkgreen"),
-        strip.clip = "inherit",
-        strip.text.y = element_text(size = 13, face = "bold", color = "white", angle = 0),
-        axis.text.y = element_text(size = 10, face = "bold", colour = "black"),
-        panel.spacing.y = unit(0.2, "lines"))
+```
+
+
+
+
+
+```{r ,fig.height=14, fig.width=10}
+# dat <- xx_kegg@compareClusterResult %>% 
+#   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+#   dplyr::filter(p.adjust < 0.05)
+# 
+# ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
+#   geom_tile(width = 1, height = 1)+
+#   scale_fill_gradientn(colours = c("#ffbbbb", "#ffaa55", "#993300", "#550000"),
+#                        values = c(0, 0.25, 0.7, 1),
+#                        guide = guide_colorbar(barwidth = 1.2, barheight = 8))+
+#   theme_bw()+
+#   geom_text(aes(label = Count), colour = "white")+
+#   facet_grid(category ~ ., scales = "free_y", space = "free_y")+
+#   theme(panel.grid = element_blank(),
+#         plot.margin = margin(r=.5, l=.2, t=.2, b=.2, unit = "in"),
+#         axis.text.x = element_text(size = 11, face = "bold", colour = "navy", angle = 30),
+#         axis.title = element_blank(),
+#         strip.background = element_rect(fill = "darkgreen"),
+#         strip.clip = "inherit",
+#         strip.text.y = element_text(size = 13, face = "bold", color = "white", angle = 0),
+#         axis.text.y = element_text(size = 10, face = "bold", colour = "black"),
+#         panel.spacing.y = unit(0.2, "lines"))
 ```
 
 And bellow to see the top 25 pathways clustered with hierarchical clustering.
 
 ```{r ,fig.height=10, fig.width=10}
-treeplot(xx_kegg, 
-         showCategory = 25, 
-         hilight = F,
-         fontsize = 3.5,
-         offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.4),
-         cluster.params = list(n= 8,
-                               method = "ward.D",
-                               color = MyPalette,
-                               label_words_n = 2,
-                               label_format = 10),
-         clusterPanel.params = list(clusterPanel = "heatMap",
-                                    pie = "count",
-                                    legend_n = 5,
-                                    colnames_angle = 60))+
-  # scale_colour_manual(values = MyPalette)+
-  theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
-        legend.text = element_text(size = 12, colour = "black"))
+# treeplot(xx_kegg, 
+#          showCategory = 25, 
+#          hilight = F,
+#          fontsize = 3.5,
+#          offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.4),
+#          cluster.params = list(n= 8,
+#                                method = "ward.D",
+#                                color = MyPalette,
+#                                label_words_n = 2,
+#                                label_format = 10),
+#          clusterPanel.params = list(clusterPanel = "heatMap",
+#                                     pie = "count",
+#                                     legend_n = 5,
+#                                     colnames_angle = 60))+
+#   # scale_colour_manual(values = MyPalette)+
+#   theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
+#         legend.text = element_text(size = 12, colour = "black"))
 ```
 
 
@@ -741,9 +1477,9 @@ treeplot(xx_kegg,
 <p class='important'>Now, let's inspect the DEGs between our cluster by taking into account their clonotypes</p>
 
 ```{r ,fig.width=10}
-seu <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/SeuratObjects/Seurat3.rds")
-DimPlot(seu, group.by = "TopClones", cols = MyPalette, split.by = "hash.ID")
-DimPlot(seu, group.by = "TopFeatures", cols = MyPalette, split.by = "hash.ID")
+# seu <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/SeuratObjects/Seurat3.rds")
+# DimPlot(seu, group.by = "TopClones", cols = MyPalette, split.by = "hash.ID")
+# DimPlot(seu, group.by = "TopFeatures", cols = MyPalette, split.by = "hash.ID")
 ```
 
 The umap shows __clonotype1__ as the dominant clone expressing __TRBV5-4__, the other clonnotypes are insignificant or not present (at diagnosis for example most of our cells don't have a clonotype which means that the cells here were probably at an ETP stage of the T-ALL), so for this part of the genes inspection, we'll compare the DEGs between the clusters carrying __clonotype1__ only.
@@ -755,63 +1491,63 @@ The umap shows __clonotype1__ as the dominant clone expressing __TRBV5-4__, the 
 <p class='p3'>1-1- UpGenes from Rcl1 vs Dcl1</p>
 
 ```{r}
-Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up
+# Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up
 ```
 
 <p class='p3'>1-2- Corresponding enriched terms (filtered by significance)</p>
 
 ```{r ,rows.print=6}
-GOobj1_lib1$GOobj_lib1_Rcl1_vs_Dcl1_Up@result %>% 
-  dplyr::filter(p.adjust < 0.05) %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-  dplyr::arrange(desc(RichFactor))
+# GOobj1_lib1$GOobj_lib1_Rcl1_vs_Dcl1_Up@result %>% 
+#   dplyr::filter(p.adjust < 0.05) %>% 
+#   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+#   dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+#   dplyr::arrange(desc(RichFactor))
 ```
 
 
 <p class='p3'>2-1- UpGenes from Rcl1 vs ICcl1</p>
 
 ```{r}
-Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up
+# Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up
 ```
 
 <p class='p3'>2-2- Corresponding enriched terms (filtered by significance)</p>
 
 ```{r ,rows.print=6}
-GOobj1_lib1$GOobj_lib1_Rcl1_vs_ICcl1_Up@result %>% 
-  dplyr::filter(p.adjust < 0.05) %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-  dplyr::arrange(desc(RichFactor))
+# GOobj1_lib1$GOobj_lib1_Rcl1_vs_ICcl1_Up@result %>% 
+#   dplyr::filter(p.adjust < 0.05) %>% 
+#   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+#   dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+#   dplyr::arrange(desc(RichFactor))
 ```
 
 
 <p class='p3'>3-1- UpGenes from ICcl1 vs Dcl1</p>
 
 ```{r}
-Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up
+# Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up
 ```
 
 <p class='p3'>2-2- Corresponding enriched terms (filtered by significance)</p>
 
 ```{r ,rows.print=6}
-GOobj1_lib1$GOobj_lib1_ICcl1_vs_Dcl1_Up@result %>% 
-  dplyr::filter(p.adjust < 0.05) %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-  dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-  dplyr::arrange(desc(RichFactor))
+# GOobj1_lib1$GOobj_lib1_ICcl1_vs_Dcl1_Up@result %>% 
+#   dplyr::filter(p.adjust < 0.05) %>% 
+#   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+#   dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
+#   dplyr::arrange(desc(RichFactor))
 ```
 
 
 <p class='p3'>4- Differences and intersections between the 3 groups</p>
 
 ```{r}
-p <- Display_Venn(Markers = list(Up_Rcl1_vs_Dcl1 = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
-                                 Up_Rcl1_vs_ICcl1 = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up,
-                                 Up_ICcl1_vs_Dcl1 = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up),
-                  Padding = 0.05)
-
-p$plot
+# p <- Display_Venn(Markers = list(Up_Rcl1_vs_Dcl1 = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
+#                                  Up_Rcl1_vs_ICcl1 = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up,
+#                                  Up_ICcl1_vs_Dcl1 = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up),
+#                   Padding = 0.05)
+# 
+# p$plot
 ```
 
 <p class='important'>We have 50 up regulated genes from Rcl1-Dcl1</p>
@@ -819,19 +1555,19 @@ p$plot
 -   11 common genes with ICcl1-Dcl1
 
 ```{r}
-p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_ICcl1_vs_Dcl1`
+# p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_ICcl1_vs_Dcl1`
 ```
 
 -   32 common genes with Rcl1-ICcl1
 
 ```{r}
-p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_Rcl1_vs_ICcl1`
+# p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_Rcl1_vs_ICcl1`
 ```
 
 -   1 common gene between the 3 lists
 
 ```{r}
-p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_Rcl1_vs_ICcl1 ∩ Up_ICcl1_vs_Dcl1`
+# p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_Rcl1_vs_ICcl1 ∩ Up_ICcl1_vs_Dcl1`
 ```
 
 <p class='p2'>his means that from clonotype1 at diagnosis (D) to the intermediate cluster (IC), we observe 11 genes that are up-regulated. From IC to relapse (R), only 1 gene previously up-regulated (RPL30) remains up-regulated, alongside 32 additional genes. Furthermore, only 8 genes were uniquely up-regulated in the Rcl1-Dcl1 analysis, and we have 84 unique genes from ICcl1 to Rcl1 suggesting that from IC to R, the cells from clonotype1 go through some distinct biological mechanisms.</p>
@@ -840,83 +1576,83 @@ p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_Rcl1_vs_ICcl1 ∩ Up_ICcl1_vs_Dcl1`
 <p class='p3'>5- Shared terms between the 3 groups</p>
 
 ```{r}
-tmp_cl1 <- list(`R-D.cl1` = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
-               `R-IC.cl1` = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up,
-               `IC-D.cl1` = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up)
-
-for(i in names(tmp_cl1)){
-  tmp_ENTREZ[[paste0(i,"_ENTREZ")]] <- bitr(geneID = tmp_cl1[[i]],
-                                           fromType = "SYMBOL",
-                                           toType = "ENTREZID",
-                                           OrgDb = "org.Hs.eg.db")
-}
-
-xx_go <- compareCluster(tmp_cl1, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
-  pairwise_termsim()
-
-xx_kegg <- compareCluster(list(`R-D.cl1` = tmp_ENTREZ$`R-D.cl1_ENTREZ`$ENTREZID,
-                               `R-IC.cl1` = tmp_ENTREZ$`R-IC.cl1_ENTREZ`$ENTREZID,
-                               `IC-D.cl1` = tmp_ENTREZ$`IC-D.cl1_ENTREZ`$ENTREZID), 
-                          fun = "enrichKEGG", 
-                          organism = "hsa", 
-                          pvalueCutoff = 0.05) %>% 
-  pairwise_termsim()
+# tmp_cl1 <- list(`R-D.cl1` = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
+#                `R-IC.cl1` = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up,
+#                `IC-D.cl1` = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up)
+# 
+# for(i in names(tmp_cl1)){
+#   tmp_ENTREZ[[paste0(i,"_ENTREZ")]] <- bitr(geneID = tmp_cl1[[i]],
+#                                            fromType = "SYMBOL",
+#                                            toType = "ENTREZID",
+#                                            OrgDb = "org.Hs.eg.db")
+# }
+# 
+# xx_go <- compareCluster(tmp_cl1, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
+#   pairwise_termsim()
+# 
+# xx_kegg <- compareCluster(list(`R-D.cl1` = tmp_ENTREZ$`R-D.cl1_ENTREZ`$ENTREZID,
+#                                `R-IC.cl1` = tmp_ENTREZ$`R-IC.cl1_ENTREZ`$ENTREZID,
+#                                `IC-D.cl1` = tmp_ENTREZ$`IC-D.cl1_ENTREZ`$ENTREZID), 
+#                           fun = "enrichKEGG", 
+#                           organism = "hsa", 
+#                           pvalueCutoff = 0.05) %>% 
+#   pairwise_termsim()
 ```
 
 -   Using GO database :
 
 ```{r ,fig.height=10, fig.width=10}
-treeplot(xx_go, 
-         showCategory = 25, 
-         hilight = F,
-         fontsize = 3.5,
-         offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.15, extend = 0.4),
-         cluster.params = list(n= 8,
-                               method = "ward.D",
-                               color = MyPalette,
-                               label_words_n = 2,
-                               label_format = 10),
-         clusterPanel.params = list(clusterPanel = "heatMap",
-                                    pie = "count",
-                                    legend_n = 5,
-                                    colnames_angle = 60))+
-  # scale_colour_manual(values = MyPalette)+
-  theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
-        legend.text = element_text(size = 12, colour = "black"))
+# treeplot(xx_go, 
+#          showCategory = 25, 
+#          hilight = F,
+#          fontsize = 3.5,
+#          offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.15, extend = 0.4),
+#          cluster.params = list(n= 8,
+#                                method = "ward.D",
+#                                color = MyPalette,
+#                                label_words_n = 2,
+#                                label_format = 10),
+#          clusterPanel.params = list(clusterPanel = "heatMap",
+#                                     pie = "count",
+#                                     legend_n = 5,
+#                                     colnames_angle = 60))+
+#   # scale_colour_manual(values = MyPalette)+
+#   theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
+#         legend.text = element_text(size = 12, colour = "black"))
 ```
 
 -   Using KEGG database :
 
 ```{r ,rows.print=10}
-xx_kegg@compareClusterResult
+# xx_kegg@compareClusterResult
 ```
 
 The pathways are divided into categories and subcategories, the following bar plot bellow describes the different categories we have. 
 
 ```{r ,fig.height=7, fig.width=10}
-xx_kegg@compareClusterResult %>% 
-  dplyr::count(category, subcategory) %>% 
-  ggplot()+
-  geom_bar(aes(x= category, y= n, fill= subcategory),
-           stat = "identity",
-           position = "stack",
-           width = 0.7)+
-  theme_bw()+
-  labs(y= "",
-       x= "Categories")+
-  theme(panel.grid.minor = element_blank(),
-        legend.title = element_text(size = 15, colour = "darkred", face = "bold"),
-        legend.text = element_text(size = 12, colour = "black"),
-        axis.title.x = element_text(size = 15, colour = "darkred", face = "bold", margin = margin(t=0.1, unit = "in")),
-        axis.text = element_text(size = 12, colour = "navy", face = "bold"),
-        axis.text.x = element_text(angle = 10),
-        legend.margin = margin(t=0.3, unit = "in"))+
-  scale_y_continuous(breaks = c(10, 20, 30, 40, 50))+
-  scale_fill_manual(values = c(MyPalette, "#ffbbbb", "#ffffbb", "#ffbbff", "#bbffff"))+
-  guides(fill = guide_legend(title = "Subcategories",
-                             position = "right",
-                             ncol = 1,
-                             override.aes = list(colour = "white", size = 3.5)))
+# xx_kegg@compareClusterResult %>% 
+#   dplyr::count(category, subcategory) %>% 
+#   ggplot()+
+#   geom_bar(aes(x= category, y= n, fill= subcategory),
+#            stat = "identity",
+#            position = "stack",
+#            width = 0.7)+
+#   theme_bw()+
+#   labs(y= "",
+#        x= "Categories")+
+#   theme(panel.grid.minor = element_blank(),
+#         legend.title = element_text(size = 15, colour = "darkred", face = "bold"),
+#         legend.text = element_text(size = 12, colour = "black"),
+#         axis.title.x = element_text(size = 15, colour = "darkred", face = "bold", margin = margin(t=0.1, unit = "in")),
+#         axis.text = element_text(size = 12, colour = "navy", face = "bold"),
+#         axis.text.x = element_text(angle = 10),
+#         legend.margin = margin(t=0.3, unit = "in"))+
+#   scale_y_continuous(breaks = c(10, 20, 30, 40, 50))+
+#   scale_fill_manual(values = c(MyPalette, "#ffbbbb", "#ffffbb", "#ffbbff", "#bbffff"))+
+#   guides(fill = guide_legend(title = "Subcategories",
+#                              position = "right",
+#                              ncol = 1,
+#                              override.aes = list(colour = "white", size = 3.5)))
 ```
 
 And now, to see the terms associated in each category.
@@ -924,49 +1660,49 @@ And now, to see the terms associated in each category.
 __RichFactor__ refers to the ratio between the __number of genes__ from my list of interest and the __size of the enriched pathway__. And the the numbers inside the tiles refer to the number of genes from my list.
 
 ```{r ,fig.height=14, fig.width=10}
-dat <- xx_kegg@compareClusterResult %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-  dplyr::filter(p.adjust < 0.05)
-
-ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
-  geom_tile(width = 1, height = 1)+
-  scale_fill_gradientn(colours = c("#ffbbbb", "#ffaa55", "#993300", "#550000"),
-                       values = c(0, 0.25, 0.7, 1),
-                       guide = guide_colorbar(barwidth = 1.2, barheight = 8))+
-  theme_bw()+
-  geom_text(aes(label = Count), colour = "white")+
-  facet_grid(category ~ ., scales = "free_y", space = "free_y")+
-  theme(panel.grid = element_blank(),
-        plot.margin = margin(r=.5, l=.2, t=.2, b=.2, unit = "in"),
-        axis.text.x = element_text(size = 11, face = "bold", colour = "navy", angle = 30),
-        axis.title = element_blank(),
-        strip.background = element_rect(fill = "darkgreen"),
-        strip.clip = "inherit",
-        strip.text.y = element_text(size = 13, face = "bold", color = "white", angle = 0),
-        axis.text.y = element_text(size = 10, face = "bold", colour = "black"),
-        panel.spacing.y = unit(0.2, "lines"))
+# dat <- xx_kegg@compareClusterResult %>% 
+#   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+#   dplyr::filter(p.adjust < 0.05)
+# 
+# ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
+#   geom_tile(width = 1, height = 1)+
+#   scale_fill_gradientn(colours = c("#ffbbbb", "#ffaa55", "#993300", "#550000"),
+#                        values = c(0, 0.25, 0.7, 1),
+#                        guide = guide_colorbar(barwidth = 1.2, barheight = 8))+
+#   theme_bw()+
+#   geom_text(aes(label = Count), colour = "white")+
+#   facet_grid(category ~ ., scales = "free_y", space = "free_y")+
+#   theme(panel.grid = element_blank(),
+#         plot.margin = margin(r=.5, l=.2, t=.2, b=.2, unit = "in"),
+#         axis.text.x = element_text(size = 11, face = "bold", colour = "navy", angle = 30),
+#         axis.title = element_blank(),
+#         strip.background = element_rect(fill = "darkgreen"),
+#         strip.clip = "inherit",
+#         strip.text.y = element_text(size = 13, face = "bold", color = "white", angle = 0),
+#         axis.text.y = element_text(size = 10, face = "bold", colour = "black"),
+#         panel.spacing.y = unit(0.2, "lines"))
 ```
 
 And bellow to see the top 25 pathways clustered with hierarchical clustering.
 
 ```{r ,fig.height=10, fig.width=10}
-treeplot(xx_kegg, 
-         showCategory = 25, 
-         hilight = F,
-         fontsize = 3.5,
-         offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.4),
-         cluster.params = list(n= 8,
-                               method = "ward.D",
-                               color = MyPalette,
-                               label_words_n = 2,
-                               label_format = 10),
-         clusterPanel.params = list(clusterPanel = "heatMap",
-                                    pie = "count",
-                                    legend_n = 5,
-                                    colnames_angle = 60))+
-  # scale_colour_manual(values = MyPalette)+
-  theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
-        legend.text = element_text(size = 12, colour = "black"))
+# treeplot(xx_kegg, 
+#          showCategory = 25, 
+#          hilight = F,
+#          fontsize = 3.5,
+#          offset.params = list(bar_tree = rel(3.3), tiplab = rel(2), hexpand = 0.05, extend = 0.4),
+#          cluster.params = list(n= 8,
+#                                method = "ward.D",
+#                                color = MyPalette,
+#                                label_words_n = 2,
+#                                label_format = 10),
+#          clusterPanel.params = list(clusterPanel = "heatMap",
+#                                     pie = "count",
+#                                     legend_n = 5,
+#                                     colnames_angle = 60))+
+#   # scale_colour_manual(values = MyPalette)+
+#   theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
+#         legend.text = element_text(size = 12, colour = "black"))
 ```
 
 
@@ -978,21 +1714,21 @@ treeplot(xx_kegg,
 Comparing all 6 enrichments
 
 ```{r}
-tmp <- append(tmp, tmp_cl1)
-
-xx_go <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
-  pairwise_termsim()
-
-xx_kegg <- compareCluster(list(`R-D` = tmp_ENTREZ$`R-D_ENTREZ`$ENTREZID,
-                               `R-IC` = tmp_ENTREZ$`R-IC_ENTREZ`$ENTREZID,
-                               `IC-D` = tmp_ENTREZ$`IC-D_ENTREZ`$ENTREZID,
-                               `R-D.cl1` = tmp_ENTREZ$`R-D.cl1_ENTREZ`$ENTREZID,
-                               `R-IC.cl1` = tmp_ENTREZ$`R-IC.cl1_ENTREZ`$ENTREZID,
-                               `IC-D.cl1` = tmp_ENTREZ$`IC-D.cl1_ENTREZ`$ENTREZID), 
-                          fun = "enrichKEGG", 
-                          organism = "hsa", 
-                          pvalueCutoff = 0.05) %>% 
-  pairwise_termsim()
+# tmp <- append(tmp, tmp_cl1)
+# 
+# xx_go <- compareCluster(tmp, fun = "enrichGO", OrgDb = "org.Hs.eg.db", pvalueCutoff = 0.05, keyType = "SYMBOL") %>% 
+#   pairwise_termsim()
+# 
+# xx_kegg <- compareCluster(list(`R-D` = tmp_ENTREZ$`R-D_ENTREZ`$ENTREZID,
+#                                `R-IC` = tmp_ENTREZ$`R-IC_ENTREZ`$ENTREZID,
+#                                `IC-D` = tmp_ENTREZ$`IC-D_ENTREZ`$ENTREZID,
+#                                `R-D.cl1` = tmp_ENTREZ$`R-D.cl1_ENTREZ`$ENTREZID,
+#                                `R-IC.cl1` = tmp_ENTREZ$`R-IC.cl1_ENTREZ`$ENTREZID,
+#                                `IC-D.cl1` = tmp_ENTREZ$`IC-D.cl1_ENTREZ`$ENTREZID), 
+#                           fun = "enrichKEGG", 
+#                           organism = "hsa", 
+#                           pvalueCutoff = 0.05) %>% 
+#   pairwise_termsim()
 ```
 
 
@@ -1001,45 +1737,45 @@ xx_kegg <- compareCluster(list(`R-D` = tmp_ENTREZ$`R-D_ENTREZ`$ENTREZID,
 -   Enrichment map plot
 
 ```{r ,fig.width=10, fig.height=10}
-emapplot(xx_go, 
-         showCategory = 15,
-         edge.params = list(show = TRUE, min = 0.3),
-         layout.params = list(layout = "kk", coords = NULL),
-         cluster.params = list(cluster = FALSE, method = stats::kmeans, n = NULL, 
-                               legend = FALSE, label_style = "shadowtext", label_words_n = 4, 
-                               label_format = 30),
-         cex.params = list(category_node = 1.5, category_label = 1.5, line = 1, pie2axis = 1, label_group = 1))+
-  scale_fill_manual(values = MyPalette)
+# emapplot(xx_go, 
+#          showCategory = 15,
+#          edge.params = list(show = TRUE, min = 0.3),
+#          layout.params = list(layout = "kk", coords = NULL),
+#          cluster.params = list(cluster = FALSE, method = stats::kmeans, n = NULL, 
+#                                legend = FALSE, label_style = "shadowtext", label_words_n = 4, 
+#                                label_format = 30),
+#          cex.params = list(category_node = 1.5, category_label = 1.5, line = 1, pie2axis = 1, label_group = 1))+
+#   scale_fill_manual(values = MyPalette)
 ```
 
 -   Cnetwork plot
 
 ```{r ,fig.width=10, fig.height=10}
 
-cnetplot(xx_go,
-         showCategory = 5,
-         cex.params = list(category_node = 1.5, gene_node = 1, category_label = 1, gene_label = 1))
+# cnetplot(xx_go,
+#          showCategory = 5,
+#          cex.params = list(category_node = 1.5, gene_node = 1, category_label = 1, gene_label = 1))
 ```
 
 -   Treeplot
 
 ```{r ,fig.height=10, fig.width=10}
-treeplot(xx_go, 
-         showCategory = 25, 
-         hilight = F,
-         fontsize = 3.5,
-         offset.params = list(bar_tree = rel(2.5), tiplab = rel(1), hexpand = 0.02, extend = 0.2),
-         cluster.params = list(n= 8,
-                               method = "ward.D",
-                               color = MyPalette,
-                               label_words_n = 2,
-                               label_format = 10),
-         clusterPanel.params = list(clusterPanel = "heatMap",
-                                    pie = "count",
-                                    legend_n = 5,
-                                    colnames_angle = 60))+
-  theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
-        legend.text = element_text(size = 12, colour = "black"))
+# treeplot(xx_go, 
+#          showCategory = 25, 
+#          hilight = F,
+#          fontsize = 3.5,
+#          offset.params = list(bar_tree = rel(2.5), tiplab = rel(1), hexpand = 0.02, extend = 0.2),
+#          cluster.params = list(n= 8,
+#                                method = "ward.D",
+#                                color = MyPalette,
+#                                label_words_n = 2,
+#                                label_format = 10),
+#          clusterPanel.params = list(clusterPanel = "heatMap",
+#                                     pie = "count",
+#                                     legend_n = 5,
+#                                     colnames_angle = 60))+
+#   theme(legend.title = element_text(size = 14, face = "bold", colour = "darkred", margin = margin(b=0.2, unit = "in")),
+#         legend.text = element_text(size = 12, colour = "black"))
 ```
 
 
@@ -1049,99 +1785,32 @@ treeplot(xx_go,
 __RichFactor__ refers to the ratio between the __number of genes__ from my list of interest and the __size of the enriched pathway__. And the the numbers inside the tiles refer to the number of genes from my list.
 
 ```{r ,fig.height=14, fig.width=10}
-dat <- xx_kegg@compareClusterResult %>% 
-  dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-  dplyr::filter(p.adjust < 0.05)
-
-ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
-  geom_tile(width = 1, height = 1)+
-  scale_fill_gradientn(colours = c("#ffbbbb", "#ffaa55", "#993300", "#550000"),
-                       values = c(0, 0.25, 0.7, 1),
-                       guide = guide_colorbar(barwidth = 1.2, barheight = 8))+
-  theme_bw()+
-  geom_text(aes(label = Count), colour = "white", size = 3.5)+
-  facet_grid(category ~ ., scales = "free_y", space = "free_y")+
-  theme(panel.grid = element_blank(),
-        plot.margin = margin(r=.2, l=.2, t=.2, b=.2, unit = "in"),
-        axis.text.x = element_text(size = 10, face = "bold", colour = "navy", angle = 45),
-        axis.title = element_blank(),
-        strip.background = element_rect(fill = "darkgreen"),
-        strip.clip = "inherit",
-        strip.text.y = element_text(size = 13, face = "bold", color = "white", angle = 0),
-        axis.text.y = element_text(size = 10, face = "bold", colour = "black"),
-        panel.spacing.y = unit(0.2, "lines"))
+# dat <- xx_kegg@compareClusterResult %>% 
+#   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
+#   dplyr::filter(p.adjust < 0.05)
+# 
+# ggplot(dat, aes(x= Cluster, y= Description, fill= RichFactor))+
+#   geom_tile(width = 1, height = 1)+
+#   scale_fill_gradientn(colours = c("#ffbbbb", "#ffaa55", "#993300", "#550000"),
+#                        values = c(0, 0.25, 0.7, 1),
+#                        guide = guide_colorbar(barwidth = 1.2, barheight = 8))+
+#   theme_bw()+
+#   geom_text(aes(label = Count), colour = "white", size = 3.5)+
+#   facet_grid(category ~ ., scales = "free_y", space = "free_y")+
+#   theme(panel.grid = element_blank(),
+#         plot.margin = margin(r=.2, l=.2, t=.2, b=.2, unit = "in"),
+#         axis.text.x = element_text(size = 10, face = "bold", colour = "navy", angle = 45),
+#         axis.title = element_blank(),
+#         strip.background = element_rect(fill = "darkgreen"),
+#         strip.clip = "inherit",
+#         strip.text.y = element_text(size = 13, face = "bold", color = "white", angle = 0),
+#         axis.text.y = element_text(size = 10, face = "bold", colour = "black"),
+#         panel.spacing.y = unit(0.2, "lines"))
 ```
 
 
 
 
-
-
-```{r ,eval=FALSE}
-
-## Ranking the genes !!!! 
-
-toptable <- Markers1_lib1$lib1_allR_vs_D$DEA_res
-
-toptable %>% 
-  dplyr::mutate(p_val_adj = p_val_adj+ 1e-280) %>% 
-  dplyr::select(Genes,
-                avg_log2FC,
-                p_val_adj) %>% 
-  dplyr::mutate(ranking = ifelse(p_val_adj < 1e-30, 
-                                 (avg_log2FC*(-log10(1e-30)))/20,
-                                 ifelse(p_val_adj < 1e-5,
-                                        (avg_log2FC*(-log10(1e-10)))/20,
-                                        avg_log2FC*-log10(p_val_adj)/20))) %>% 
-  dplyr::arrange(desc(ranking)) -> RankingData1
-
-conv.allGenes <- bitr(RankingData1$Genes, 
-                      fromType = "SYMBOL",
-                      toType = "ENTREZID",
-                      OrgDb = "org.Hs.eg.db") %>% 
-  dplyr::mutate(Genes = SYMBOL) %>% 
-  dplyr::inner_join(RankingData1, by = "Genes")
-
-RankingData <- conv.allGenes %>% dplyr::select(Genes, ENTREZID, avg_log2FC, p_val_adj, ranking)
-
-List_AllRankedGenes <- list() 
-
-List_AllRankedGenes[["ENTREZID"]] <- RankingData$ranking %>% setNames(RankingData$ENTREZID)
-List_AllRankedGenes[["ENTREZID_FC"]] <- RankingData$avg_log2FC %>% setNames(RankingData$ENTREZID)
-
-
-## Background genes !!!! 
-
-List_BG <- list()
-
-List_BG[["GO_bg"]] <- List_AllRankedGenes[["ENTREZID"]][names(List_AllRankedGenes[["ENTREZID"]]) %in% 
-                                                        keys(org.Hs.eg.db, keytype = "ENTREZID")]
-
-
-## RUN GSEA
-
-gsea.go <- gseGO(geneList     = List_AllRankedGenes[["ENTREZID"]],
-                 OrgDb        = org.Hs.eg.db,
-                 ont          = "BP",
-                 minGSSize    = 50,
-                 maxGSSize    = 1000,
-                 pvalueCutoff = 0.05,
-                 verbose      = FALSE)
-
-gsea.go <- setReadable(gsea.go, 'org.Hs.eg.db', 'ENTREZID')
-
-dotplot(gsea.go, showCategory=13, color = "p.adjust", x="NES")
-
-ridgeplot(gsea.go, showCategory = 15)+theme(axis.text.y = element_text(size = 12))
-
-gseaplot(gsea.go, geneSetID = 1, by = "runningScore", title = gsea.go@result$Description[1])
-gseaplot(gsea.go, geneSetID = 1, by = "preranked", title = gsea.go@result$Description[1])
-gseaplot(gsea.go, geneSetID = 1, title = gsea.go@result$Description[1])
-
-
-gseaplot2(gsea.go, geneSetID = 1, title = gsea.go$Description[1])
-gseaplot2(gsea.go, geneSetID = 1:3)
-```
 
 
 
