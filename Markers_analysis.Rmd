@@ -358,6 +358,7 @@ for(i in names(Markers1_lib1)){
     dplyr::select(Genes,
                 avg_log2FC,
                 p_val_adj) %>% 
+    dplyr::filter(abs(avg_log2FC) > 0.2) %>% 
     dplyr::mutate(ranking = ifelse(p_val_adj < 1e-30, 
                                  (avg_log2FC*(-log10(1e-30)))/20,
                                  ifelse(p_val_adj < 1e-5,
@@ -751,7 +752,7 @@ The enriched biological processes :
 if(nrow(gsea.kegg@result) != 0){
   gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
 } else {
-  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.kegg@result))), sep = "\n")
 }
 ```
 
@@ -882,7 +883,7 @@ The enriched biological processes :
 if(nrow(gsea.kegg@result) != 0){
   gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
 } else {
-  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.kegg@result))), sep = "\n")
 }
 ```
 
@@ -997,13 +998,6 @@ if(nrow(gsea.go.bp@result) != 0){
 } 
 ```
 
-Let's view the pathways
-
-```{r ,fig.width=10}
-gseaplot2(gsea.go.bp, geneSetID = 1:11, 
-          color = MyPalette[1:11], pvalue_table = F, subplots = 1:2, base_size = 14, rel_heights = c(2,0.5,1))
-```
-
 
 
 <p class='important', style='margin-top:40px'>Using the KEGG database for background genes</p>
@@ -1021,7 +1015,7 @@ The enriched biological processes :
 if(nrow(gsea.kegg@result) != 0){
   gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
 } else {
-  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.kegg@result))), sep = "\n")
 }
 ```
 
@@ -1153,7 +1147,7 @@ The enriched biological processes :
 if(nrow(gsea.kegg@result) != 0){
   gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
 } else {
-  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.kegg@result))), sep = "\n")
 }
 ```
 
@@ -1287,7 +1281,7 @@ The enriched biological processes :
 if(nrow(gsea.kegg@result) != 0){
   gsea.kegg@result %>% dplyr::select(Description, setSize, NES, p.adjust, rank) %>% as.tibble()
 } else {
-  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.go.bp@result))), sep = "\n")
+  cat(c("The analysis showed no significant results", paste0("Length : ",nrow(gsea.kegg@result))), sep = "\n")
 }
 ```
 
@@ -1310,6 +1304,350 @@ GSEAobj_list$Lib1[["ICcl1-Dcl1"]] <- list(go = gsea.go.bp,
 
 
 
+## 2- Multiple comparison
+
+<p class='important'>First, let's inspect the genes between the different contrasts</p>
+
+### 2-1- Inspecte common genes    {.tabset .tabset-pills}
+
+```{r}
+## Initiate an empty list to stock the results
+Common_markers <- list()
+
+# UP GENES :
+############
+## R-D vs Rcl1-Dcl1
+tmp <- list(`R-D` = Markers1_lib1$lib1_allR_vs_D$Up,
+            `Rcl1-Dcl1` = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up)
+p <- Display_Venn(tmp, Padding = 0.06)
+Common_markers[["R-D vs Rcl1-Dcl1 UP"]] <- p
+## R-IC vs Rcl1-ICcl1
+tmp <- list(`R-IC` = Markers1_lib1$lib1_allR_vs_IC$Up,
+            `Rcl1-ICcl1` = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up)
+p <- Display_Venn(tmp, Padding = 0.06)
+Common_markers[["R-IC vs Rcl1-ICcl1 UP"]] <- p
+## IC-D vs ICcl1-Dcl1
+tmp <- list(`IC-D` = Markers1_lib1$lib1_IC_vs_D$Up,
+            `ICcl1-Dcl1` = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up)
+p <- Display_Venn(tmp, Padding = 0.06)
+Common_markers[["IC-D vs ICcl1-Dcl1 UP"]] <- p
+
+## R-D vs R-IC vs IC-D
+tmp <- list(`R-D` = Markers1_lib1$lib1_allR_vs_D$Up,
+            `R-IC` = Markers1_lib1$lib1_allR_vs_IC$Up,
+            `IC-D` = Markers1_lib1$lib1_IC_vs_D$Up)
+p <- Display_Venn(tmp, Padding = 0.06)
+Common_markers[["R-D vs R-IC vs IC-D UP"]] <- p
+## Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1
+tmp <- list(`Rcl1-Dcl1` = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
+            `Rcl1-ICcl1` = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up,
+            `ICcl1-Dcl1` = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up)
+p <- Display_Venn(tmp, Padding = 0.06)
+Common_markers[["Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 UP"]] <- p
+
+
+# DOWN GENES :
+##############
+## R-D vs Rcl1-Dcl1
+tmp <- list(`R-D` = Markers1_lib1$lib1_allR_vs_D$Down,
+            `Rcl1-Dcl1` = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Down)
+p <- Display_Venn(tmp, Padding = 0.06)
+Common_markers[["R-D vs Rcl1-Dcl1 Down"]] <- p
+## R-IC vs Rcl1-ICcl1
+tmp <- list(`R-IC` = Markers1_lib1$lib1_allR_vs_IC$Down,
+            `Rcl1-ICcl1` = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Down)
+p <- Display_Venn(tmp, Padding = 0.06)
+Common_markers[["R-IC vs Rcl1-ICcl1 Down"]] <- p
+## IC-D vs ICcl1-Dcl1
+tmp <- list(`IC-D` = Markers1_lib1$lib1_IC_vs_D$Down,
+            `ICcl1-Dcl1` = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Down)
+p <- Display_Venn(tmp, Padding = 0.06)
+Common_markers[["IC-D vs ICcl1-Dcl1 Down"]] <- p
+
+## R-D vs R-IC vs IC-D
+tmp <- list(`R-D` = Markers1_lib1$lib1_allR_vs_D$Down,
+            `R-IC` = Markers1_lib1$lib1_allR_vs_IC$Down,
+            `IC-D` = Markers1_lib1$lib1_IC_vs_D$Down)
+p <- Display_Venn(tmp, Padding = 0.06)
+Common_markers[["R-D vs R-IC vs IC-D Down"]] <- p
+## Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1
+tmp <- list(`Rcl1-Dcl1` = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Down,
+            `Rcl1-ICcl1` = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Down,
+            `ICcl1-Dcl1` = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Down)
+p <- Display_Venn(tmp, Padding = 0.06)
+Common_markers[["Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 Down"]] <- p
+```
+
+#### R-D vs Rcl1-Dcl1
+
+-   <p class='p2'>Up Genes</p>
+
+```{r}
+Common_markers$`R-D vs Rcl1-Dcl1 UP`$plot
+```
+
+The common genes are (top50): 
+
+```{r}
+Common_markers$`R-D vs Rcl1-Dcl1 UP`$intersections$`R-D ∩ Rcl1-Dcl1` %>% 
+  head(50)
+```
+
+Specific to clonotype1 (top50)
+
+```{r}
+Common_markers$`R-D vs Rcl1-Dcl1 UP`$group_specific$`R-D | Rcl1-Dcl1`$`Rcl1-Dcl1` %>% 
+  head(50)
+```
+
+
+
+-   <p class='p2', style='margin-top:100px'>Down Genes</p>
+
+```{r}
+Common_markers$`R-D vs Rcl1-Dcl1 Down`$plot
+```
+
+The common genes are (top50): 
+
+```{r}
+Common_markers$`R-D vs Rcl1-Dcl1 Down`$intersections$`R-D ∩ Rcl1-Dcl1` %>% 
+  head(50)
+```
+
+Specific to clonotype1 (top50)
+
+```{r}
+Common_markers$`R-D vs Rcl1-Dcl1 Down`$group_specific$`R-D | Rcl1-Dcl1`$`Rcl1-Dcl1` %>% 
+  head(50)
+```
+
+
+#### R-IC vs Rcl1-ICcl1
+
+-   <p class='p2'>Up Genes</p>
+
+```{r}
+Common_markers$`R-IC vs Rcl1-ICcl1 UP`$plot
+```
+
+The common genes are (top50): 
+
+```{r}
+Common_markers$`R-IC vs Rcl1-ICcl1 UP`$intersections$`R-IC ∩ Rcl1-ICcl1` %>% 
+  head(50)
+```
+
+Specific to clonotype1 (top50)
+
+```{r}
+Common_markers$`R-IC vs Rcl1-ICcl1 UP`$group_specific$`R-IC | Rcl1-ICcl1`$`Rcl1-ICcl1` %>% 
+  head(50)
+```
+
+
+
+-   <p class='p2', style='margin-top:100px'>Down Genes</p>
+
+```{r}
+Common_markers$`R-IC vs Rcl1-ICcl1 Down`$plot
+```
+
+The common genes are (top50): 
+
+```{r}
+Common_markers$`R-IC vs Rcl1-ICcl1 Down`$intersections$`R-IC ∩ Rcl1-ICcl1` %>% 
+  head(50)
+```
+
+Specific to clonotype1 (top50)
+
+```{r}
+Common_markers$`R-IC vs Rcl1-ICcl1 Down`$group_specific$`R-IC | Rcl1-ICcl1`$`Rcl1-ICcl1` %>% 
+  head(50)
+```
+
+
+
+#### IC-D vs ICcl1-Dcl1
+
+-   <p class='p2'>Up Genes</p>
+
+```{r}
+Common_markers$`IC-D vs ICcl1-Dcl1 UP`$plot
+```
+
+The common genes are (top50): 
+
+```{r}
+Common_markers$`IC-D vs ICcl1-Dcl1 UP`$intersections$`IC-D ∩ ICcl1-Dcl1` %>% 
+  head(50)
+```
+
+Specific to clonotype1 (top50)
+
+```{r}
+Common_markers$`IC-D vs ICcl1-Dcl1 UP`$group_specific$`IC-D | ICcl1-Dcl1`$`ICcl1-Dcl1` %>% 
+  head(50)
+```
+
+
+
+-   <p class='p2', style='margin-top:100px'>Down Genes</p>
+
+```{r}
+Common_markers$`IC-D vs ICcl1-Dcl1 Down`$plot
+```
+
+The common genes are (top50): 
+
+```{r}
+Common_markers$`IC-D vs ICcl1-Dcl1 Down`$intersections$`IC-D ∩ ICcl1-Dcl1` %>% 
+  head(50)
+```
+
+Specific to clonotype1 (top50)
+
+```{r}
+Common_markers$`IC-D vs ICcl1-Dcl1 Down`$group_specific$`IC-D | ICcl1-Dcl1`$`ICcl1-Dcl1` %>% 
+  head(50)
+```
+
+
+
+
+#### R-IC-D
+
+-   <p class='p2'>Up Genes</p>
+
+```{r}
+Common_markers$`R-D vs R-IC vs IC-D UP`$plot
+```
+
+__We have 286 up regulated genes from D to R. __
+
+-   We have 29 genes in common with those up regulated from D to IC.
+
+```{r}
+Common_markers$`R-D vs R-IC vs IC-D UP`$intersections$`R-D ∩ IC-D`
+```
+
+-   We have 106 genes in common with those up regulated from IC to R (here's the top50).
+
+```{r}
+Common_markers$`R-D vs R-IC vs IC-D UP`$intersections$`R-D ∩ R-IC` %>% head(50)
+```
+
+-   We have 3 common genes between all the stages
+
+```{r}
+Common_markers$`R-D vs R-IC vs IC-D UP`$intersections$`R-D ∩ R-IC ∩ IC-D`
+```
+
+<p class='p2'>his means that from diagnosis (D) to the intermediate cluster (IC), we observe 29 genes that are up-regulated. From IC to relapse (R), 3 of these previously up-regulated genes maintained their up-regulation, alongside 103 additional genes. Furthermore, 154 genes were uniquely up-regulated in the R-D analysis, suggesting that this regulation likely occurred after the blood was sampled for the analysis.</p>
+
+
+
+
+
+-   <p class='p2', style='margin-top:100px'>Down Genes</p>
+
+```{r}
+Common_markers$`R-D vs R-IC vs IC-D Down`$plot
+```
+
+__We have 718 down regulated genes from D to R. __
+
+-   We have 78 genes in common with those down regulated from D to IC (here's the top50).
+
+```{r}
+Common_markers$`R-D vs R-IC vs IC-D Down`$intersections$`R-D ∩ IC-D` %>% head(50)
+```
+
+-   We have 118 genes in common with those down regulated from IC to R (here's the top50).
+
+```{r}
+Common_markers$`R-D vs R-IC vs IC-D Down`$intersections$`R-D ∩ R-IC` %>% head(50)
+```
+
+-   We have 2 common genes between all the stages
+
+```{r}
+Common_markers$`R-D vs R-IC vs IC-D Down`$intersections$`R-D ∩ R-IC ∩ IC-D`
+```
+
+<p class='p2'>his means that from diagnosis (D) to the intermediate cluster (IC), we observe 78 genes that are down-regulated. From IC to relapse (R), 2 of these previously down-regulated genes maintained their down-regulation, alongside 116 additional genes. Furthermore, 524 genes were uniquely down-regulated in the R-D analysis, suggesting that this regulation likely occurred after the blood was sampled for the analysis.</p>
+
+
+
+#### Rcl1-ICcl1-Dcl1
+
+-   <p class='p2'>Up Genes</p>
+
+```{r}
+Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 UP`$plot
+```
+
+__We have 50 up regulated genes from D to R. __
+
+-   We have 11 genes in common with those up regulated from D to IC.
+
+```{r}
+Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 UP`$intersections$`Rcl1-Dcl1 ∩ ICcl1-Dcl1`
+```
+
+-   We have 32 genes in common with those up regulated from IC to R.
+
+```{r}
+Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 UP`$intersections$`Rcl1-Dcl1 ∩ Rcl1-ICcl1` %>% head(50)
+```
+
+-   We have 1 common gene between all the stages
+
+```{r}
+Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 UP`$intersections$`Rcl1-Dcl1 ∩ Rcl1-ICcl1 ∩ ICcl1-Dcl1`
+```
+
+<p class='p2'>his means that from diagnosis (D) to the intermediate cluster (IC), we observe 11 genes that are up-regulated. From IC to relapse (R), 1 of these previously up-regulated genes maintained its up-regulation, alongside 31 additional genes. Furthermore, 8 genes were uniquely up-regulated in the R-D analysis, suggesting that this regulation likely occurred after the blood was sampled for the analysis.</p>
+
+
+
+
+
+-   <p class='p2', style='margin-top:100px'>Down Genes</p>
+
+```{r}
+Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 Down`$plot
+```
+
+__We have 439 down regulated genes from D to R. __
+
+-   We have 39 genes in common with those down regulated from D to IC.
+
+```{r}
+Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 Down`$intersections$`Rcl1-Dcl1 ∩ ICcl1-Dcl1` %>% head(50)
+```
+
+-   We have 61 genes in common with those down regulated from IC to R (here's the top50).
+
+```{r}
+Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 Down`$intersections$`Rcl1-Dcl1 ∩ Rcl1-ICcl1` %>% head(50)
+```
+
+-   We have 1 common gene between all the stages
+
+```{r}
+Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 Down`$intersections$`Rcl1-Dcl1 ∩ Rcl1-ICcl1 ∩ ICcl1-Dcl1`
+```
+
+<p class='p2'>his means that from diagnosis (D) to the intermediate cluster (IC), we observe 39 genes that are down-regulated. From IC to relapse (R), 1 of these previously down-regulated genes maintained their down-regulation, alongside 60 additional genes. Furthermore, 340 genes were uniquely down-regulated in the R-D analysis, suggesting that this regulation likely occurred after the blood was sampled for the analysis.</p>
+
+
+
+### 2-2- Inspecte common genes
+
+<p class='important'>Now, let's inspect the common enriched pathways between all the groups</p>
+
 
 
 
@@ -1331,17 +1669,8 @@ GSEAobj_list$Lib1[["ICcl1-Dcl1"]] <- list(go = gsea.go.bp,
 
 ```{r ,eval=FALSE}
 
-p <- Display_Venn(Markers = list(Up_R_vs_IC = Markers1_lib1$lib1_R_vs_IC$Up,
-                                 Up_R_vs_D = Markers1_lib1$lib1_R_vs_D_ICfree$Up,
-                                 Up_IC_vs_D = Markers1_lib1$lib1_IC_vs_D$Up),
-                  Padding = 0.05)
 
-p$plot
-p$intersections$`Up_R_vs_D ∩ Up_IC_vs_D`
-p$intersections$`Up_R_vs_IC ∩ Up_R_vs_D`
-p$intersections$`Up_R_vs_IC ∩ Up_R_vs_D ∩ Up_IC_vs_D`
 
-<p class='p2'>his means that from diagnosis (D) to the intermediate cluster (IC), we observe 29 genes that are up-regulated. From IC to relapse (R), 3 of these previously up-regulated genes maintained their up-regulation, alongside 103 additional genes. Furthermore, 154 genes were uniquely up-regulated in the R-D analysis, suggesting that this regulation likely occurred after the blood was sampled for the analysis.</p>
   
 tmp <- list(`R-D` = Markers1_lib1$lib1_R_vs_D$Up,
             `R-IC` = Markers1_lib1$lib1_R_vs_IC$Up,
@@ -1445,7 +1774,6 @@ __RichFactor__ refers to the ratio between the __number of genes__ from my list 
 #         panel.spacing.y = unit(0.2, "lines"))
 ```
 
-And bellow to see the top 25 pathways clustered with hierarchical clustering.
 
 ```{r ,fig.height=10, fig.width=10}
 # treeplot(xx_kegg, 
@@ -1472,71 +1800,7 @@ And bellow to see the top 25 pathways clustered with hierarchical clustering.
 
 
 
-## Clonotypes comparison
 
-<p class='important'>Now, let's inspect the DEGs between our cluster by taking into account their clonotypes</p>
-
-```{r ,fig.width=10}
-# seu <- readRDS("~/Bureau/Projects/SingleCell/ScAnalysis/Library1/SeuratObjects/Seurat3.rds")
-# DimPlot(seu, group.by = "TopClones", cols = MyPalette, split.by = "hash.ID")
-# DimPlot(seu, group.by = "TopFeatures", cols = MyPalette, split.by = "hash.ID")
-```
-
-The umap shows __clonotype1__ as the dominant clone expressing __TRBV5-4__, the other clonnotypes are insignificant or not present (at diagnosis for example most of our cells don't have a clonotype which means that the cells here were probably at an ETP stage of the T-ALL), so for this part of the genes inspection, we'll compare the DEGs between the clusters carrying __clonotype1__ only.
-
-
-<p class='important'>So let's get to the DEGs inspection : "clonotype1 at relapse (Rcl1) vs clonotype1 at diagnosis (Dcl1)", "Rcl1 vs clonotype1 at the intermediate cluster (ICcl1)" and also "ICcl1 vs Dcl1"</p>
-
-
-<p class='p3'>1-1- UpGenes from Rcl1 vs Dcl1</p>
-
-```{r}
-# Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up
-```
-
-<p class='p3'>1-2- Corresponding enriched terms (filtered by significance)</p>
-
-```{r ,rows.print=6}
-# GOobj1_lib1$GOobj_lib1_Rcl1_vs_Dcl1_Up@result %>% 
-#   dplyr::filter(p.adjust < 0.05) %>% 
-#   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-#   dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-#   dplyr::arrange(desc(RichFactor))
-```
-
-
-<p class='p3'>2-1- UpGenes from Rcl1 vs ICcl1</p>
-
-```{r}
-# Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up
-```
-
-<p class='p3'>2-2- Corresponding enriched terms (filtered by significance)</p>
-
-```{r ,rows.print=6}
-# GOobj1_lib1$GOobj_lib1_Rcl1_vs_ICcl1_Up@result %>% 
-#   dplyr::filter(p.adjust < 0.05) %>% 
-#   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-#   dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-#   dplyr::arrange(desc(RichFactor))
-```
-
-
-<p class='p3'>3-1- UpGenes from ICcl1 vs Dcl1</p>
-
-```{r}
-# Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up
-```
-
-<p class='p3'>2-2- Corresponding enriched terms (filtered by significance)</p>
-
-```{r ,rows.print=6}
-# GOobj1_lib1$GOobj_lib1_ICcl1_vs_Dcl1_Up@result %>% 
-#   dplyr::filter(p.adjust < 0.05) %>% 
-#   dplyr::mutate(RichFactor = round(Count / as.numeric(sub("/\\d+","",BgRatio)),5)) %>% 
-#   dplyr::select(Description, RichFactor, p.adjust, GeneRatio, BgRatio, Count, geneID) %>% 
-#   dplyr::arrange(desc(RichFactor))
-```
 
 
 <p class='p3'>4- Differences and intersections between the 3 groups</p>
