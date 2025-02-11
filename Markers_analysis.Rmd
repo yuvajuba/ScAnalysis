@@ -6,7 +6,10 @@ output:
   html_document:
     number_sections: no
     toc: true
-    toc_float: true
+    toc_depth: 6
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
     highlight: "tango"
     df_print: paged
     code_folding: hide
@@ -1799,45 +1802,6 @@ __RichFactor__ refers to the ratio between the __number of genes__ from my list 
 
 
 
-
-
-
-
-<p class='p3'>4- Differences and intersections between the 3 groups</p>
-
-```{r}
-# p <- Display_Venn(Markers = list(Up_Rcl1_vs_Dcl1 = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
-#                                  Up_Rcl1_vs_ICcl1 = Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up,
-#                                  Up_ICcl1_vs_Dcl1 = Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up),
-#                   Padding = 0.05)
-# 
-# p$plot
-```
-
-<p class='important'>We have 50 up regulated genes from Rcl1-Dcl1</p>
-
--   11 common genes with ICcl1-Dcl1
-
-```{r}
-# p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_ICcl1_vs_Dcl1`
-```
-
--   32 common genes with Rcl1-ICcl1
-
-```{r}
-# p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_Rcl1_vs_ICcl1`
-```
-
--   1 common gene between the 3 lists
-
-```{r}
-# p$intersections$`Up_Rcl1_vs_Dcl1 ∩ Up_Rcl1_vs_ICcl1 ∩ Up_ICcl1_vs_Dcl1`
-```
-
-<p class='p2'>his means that from clonotype1 at diagnosis (D) to the intermediate cluster (IC), we observe 11 genes that are up-regulated. From IC to relapse (R), only 1 gene previously up-regulated (RPL30) remains up-regulated, alongside 32 additional genes. Furthermore, only 8 genes were uniquely up-regulated in the Rcl1-Dcl1 analysis, and we have 84 unique genes from ICcl1 to Rcl1 suggesting that from IC to R, the cells from clonotype1 go through some distinct biological mechanisms.</p>
-
-
-<p class='p3'>5- Shared terms between the 3 groups</p>
 
 ```{r}
 # tmp_cl1 <- list(`R-D.cl1` = Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up,
