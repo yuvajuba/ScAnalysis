@@ -2,6 +2,7 @@
 body {
     background-color: black;
     font-size: 14px;
+    color: white;
 }
 
 
@@ -277,7 +278,7 @@ div.dataTables_paginate.paging_simple_numbers {
 
 /* Tablists */
 ul.nav.nav-pills {
-    margin-top: 15px;
+    margin-top: 25px;
     margin-bottom: 15px;
 }
 
@@ -289,6 +290,23 @@ ul.nav.nav-pills li.active a {
 }
 
 ul.nav.nav-pills li a {
+    font-size: 18px;
+    color: #9b4;
+}
+
+ul.nav.nav-tabs {
+    margin-top: 25px;
+    margin-bottom: 15px;
+}
+
+ul.nav.nav-tabs li.active a {
+    font-weight: 600;
+    font-size: 18px;
+    color: darkred;
+    background-color: #9b4;
+}
+
+ul.nav.nav-tabs li a {
     font-size: 18px;
     color: #9b4;
 }

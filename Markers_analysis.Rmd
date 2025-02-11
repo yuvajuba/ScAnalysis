@@ -293,12 +293,12 @@ DimPlot(seu, group.by = "TopClones", cols = MyPalette, split.by = "hash.ID")
 
 ### R-allD
 
-#### Over Representative Analysis (ORA)
+[Over Representative Analysis (ORA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600'}
 
-<p class='p3'>Top50 UpGenes</p>
+<p class='p3'>UpGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_allR_vs_allD$Up %>% head(50)
+Markers1_lib1$lib1_allR_vs_allD$Up
 ```
 
 <p class='p3'>Enriched terms with the upgenes</p>
@@ -322,10 +322,10 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_D_Up,
 ```
 
 
-<p class='p3'>Top50 DownGenes</p>
+<p class='p3'>DownGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_allR_vs_allD$Down %>% head(50)
+Markers1_lib1$lib1_allR_vs_allD$Down
 ```
 
 <p class='p3'>Enriched terms with the downgenes</p>
@@ -348,7 +348,7 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_D_Down,
   scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
 ```
 
-#### Gene Set Enrichment Analysis (GSEA)
+[Gene Set Enrichment Analysis (GSEA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600; margin-top:80'}
 
 ```{r}
 
@@ -494,12 +494,12 @@ GSEAobj_list$Lib1[["R-allD"]] <- list(go = gsea.go.bp,
 
 ### R-D
 
-#### Over Representative Analysis (ORA)
+[Over Representative Analysis (ORA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600'}
 
-<p class='p3'>Top50 UpGenes</p>
+<p class='p3'>UpGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_allR_vs_D$Up %>% head(50)
+Markers1_lib1$lib1_allR_vs_D$Up
 ```
 
 <p class='p3'>Enriched terms with the upgenes</p>
@@ -523,10 +523,10 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_D_ICfree_Up,
 ```
 
 
-<p class='p3'>Top50 DownGenes</p>
+<p class='p3'>DownGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_allR_vs_D$Down %>% head(50)
+Markers1_lib1$lib1_allR_vs_D$Down
 ```
 
 <p class='p3'>Enriched terms with the downgenes</p>
@@ -549,7 +549,7 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_D_ICfree_Down,
   scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
 ```
 
-#### Gene Set Enrichment Analysis (GSEA)
+[Gene Set Enrichment Analysis (GSEA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600; margin-top:80'}
 
 <p class='important'>Using the GO database for background genes</p>
 
@@ -650,12 +650,12 @@ GSEAobj_list$Lib1[["R-D"]] <- list(go = gsea.go.bp,
 
 ### IC-D
 
-#### Over Representative Analysis (ORA)
+[Over Representative Analysis (ORA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600'}
 
-<p class='p3'>Top50 UpGenes</p>
+<p class='p3'>UpGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_IC_vs_D$Up %>% head(50)
+Markers1_lib1$lib1_IC_vs_D$Up
 ```
 
 <p class='p3'>Enriched terms with the upgenes</p>
@@ -679,10 +679,10 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_IC_vs_D_Up,
 ```
 
 
-<p class='p3'>Top50 DownGenes</p>
+<p class='p3'>DownGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_IC_vs_D$Down %>% head(50)
+Markers1_lib1$lib1_IC_vs_D$Down
 ```
 
 <p class='p3'>Enriched terms with the downgenes</p>
@@ -705,7 +705,7 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_D_ICfree_Down,
   scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
 ```
 
-#### Gene Set Enrichment Analysis (GSEA)
+[Gene Set Enrichment Analysis (GSEA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600; margin-top:80'}
 
 <p class='important'>Using the GO database for background genes</p>
 
@@ -781,12 +781,12 @@ GSEAobj_list$Lib1[["IC-D"]] <- list(go = gsea.go.bp,
 
 ### R-IC
 
-#### Over Representative Analysis (ORA)
+[Over Representative Analysis (ORA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600'}
 
-<p class='p3'>Top50 UpGenes</p>
+<p class='p3'>UpGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_allR_vs_IC$Up %>% head(50)
+Markers1_lib1$lib1_allR_vs_IC$Up
 ```
 
 <p class='p3'>Enriched terms with the upgenes</p>
@@ -810,10 +810,10 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_IC_Up,
 ```
 
 
-<p class='p3'>Top50 DownGenes</p>
+<p class='p3'>DownGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_allR_vs_IC$Down %>% head(50)
+Markers1_lib1$lib1_allR_vs_IC$Down
 ```
 
 <p class='p3'>Enriched terms with the downgenes</p>
@@ -836,7 +836,7 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_R_vs_IC_Down,
   scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
 ```
 
-#### Gene Set Enrichment Analysis (GSEA)
+[Gene Set Enrichment Analysis (GSEA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600; margin-top:80'}
 
 <p class='important'>Using the GO database for background genes</p>
 
@@ -912,12 +912,12 @@ GSEAobj_list$Lib1[["R-IC"]] <- list(go = gsea.go.bp,
 
 ### Rcl1-Dcl1
 
-#### Over Representative Analysis (ORA)
+[Over Representative Analysis (ORA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600'}
 
-<p class='p3'>Top50 UpGenes</p>
+<p class='p3'>UpGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up %>% head(50)
+Markers1_lib1$lib1_Rcl1_vs_Dcl1$Up
 ```
 
 <p class='p3'>Enriched terms with the upgenes</p>
@@ -941,10 +941,10 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_Rcl1_vs_Dcl1_Up,
 ```
 
 
-<p class='p3'>Top50 DownGenes</p>
+<p class='p3'>DownGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_Rcl1_vs_Dcl1$Down %>% head(50)
+Markers1_lib1$lib1_Rcl1_vs_Dcl1$Down
 ```
 
 <p class='p3'>Enriched terms with the downgenes</p>
@@ -967,7 +967,7 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_Rcl1_vs_Dcl1_Down,
   scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
 ```
 
-#### Gene Set Enrichment Analysis (GSEA)
+[Gene Set Enrichment Analysis (GSEA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600; margin-top:80'}
 
 <p class='important'>Using the GO database for background genes</p>
 
@@ -1044,12 +1044,12 @@ GSEAobj_list$Lib1[["Rcl1-Dcl1"]] <- list(go = gsea.go.bp,
 
 ### Rcl1-ICcl1
 
-#### Over Representative Analysis (ORA)
+[Over Representative Analysis (ORA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600'}
 
-<p class='p3'>Top50 UpGenes</p>
+<p class='p3'>UpGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up %>% head(50)
+Markers1_lib1$lib1_Rcl1_vs_ICcl1$Up
 ```
 
 <p class='p3'>Enriched terms with the upgenes</p>
@@ -1073,10 +1073,10 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_Rcl1_vs_ICcl1_Up,
 ```
 
 
-<p class='p3'>Top50 DownGenes</p>
+<p class='p3'>DownGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_Rcl1_vs_ICcl1$Down %>% head(50)
+Markers1_lib1$lib1_Rcl1_vs_ICcl1$Down
 ```
 
 <p class='p3'>Enriched terms with the downgenes</p>
@@ -1099,7 +1099,7 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_Rcl1_vs_ICcl1_Down,
   scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
 ```
 
-#### Gene Set Enrichment Analysis (GSEA)
+[Gene Set Enrichment Analysis (GSEA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600; margin-top:80'}
 
 <p class='important'>Using the GO database for background genes</p>
 
@@ -1178,12 +1178,12 @@ GSEAobj_list$Lib1[["Rcl1-ICcl1"]] <- list(go = gsea.go.bp,
 
 ### ICcl1-Dcl1
 
-#### Over Representative Analysis (ORA)
+[Over Representative Analysis (ORA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600'}
 
-<p class='p3'>Top50 UpGenes</p>
+<p class='p3'>UpGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up %>% head(50)
+Markers1_lib1$lib1_ICcl1_vs_Dcl1$Up
 ```
 
 <p class='p3'>Enriched terms with the upgenes</p>
@@ -1207,10 +1207,10 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_ICcl1_vs_Dcl1_Up,
 ```
 
 
-<p class='p3'>Top50 DownGenes</p>
+<p class='p3'>DownGenes</p>
 
 ```{r}
-Markers1_lib1$lib1_ICcl1_vs_Dcl1$Down %>% head(50)
+Markers1_lib1$lib1_ICcl1_vs_Dcl1$Down
 ```
 
 <p class='p3'>Enriched terms with the downgenes</p>
@@ -1233,7 +1233,7 @@ enrichplot::heatplot(GOobj1_lib1$GOobj_lib1_ICcl1_vs_Dcl1_Down,
   scale_fill_gradientn(colours = c("black","white"), values = c(0,1))
 ```
 
-#### Gene Set Enrichment Analysis (GSEA)
+[Gene Set Enrichment Analysis (GSEA)]{style='font-size:22; color:gold; margin-bottom:30px; font-weight:600; margin-top:80'}
 
 <p class='important'>Using the GO database for background genes</p>
 
@@ -1389,18 +1389,16 @@ Common_markers[["Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 Down"]] <- p
 Common_markers$`R-D vs Rcl1-Dcl1 UP`$plot
 ```
 
-The common genes are (top50): 
+The common genes are : 
 
 ```{r}
-Common_markers$`R-D vs Rcl1-Dcl1 UP`$intersections$`R-D ∩ Rcl1-Dcl1` %>% 
-  head(50)
+Common_markers$`R-D vs Rcl1-Dcl1 UP`$intersections$`R-D ∩ Rcl1-Dcl1`
 ```
 
-Specific to clonotype1 (top50)
+Specific to clonotype1 
 
 ```{r}
-Common_markers$`R-D vs Rcl1-Dcl1 UP`$group_specific$`R-D | Rcl1-Dcl1`$`Rcl1-Dcl1` %>% 
-  head(50)
+Common_markers$`R-D vs Rcl1-Dcl1 UP`$group_specific$`R-D | Rcl1-Dcl1`$`Rcl1-Dcl1` 
 ```
 
 
@@ -1411,18 +1409,16 @@ Common_markers$`R-D vs Rcl1-Dcl1 UP`$group_specific$`R-D | Rcl1-Dcl1`$`Rcl1-Dcl1
 Common_markers$`R-D vs Rcl1-Dcl1 Down`$plot
 ```
 
-The common genes are (top50): 
+The common genes are : 
 
 ```{r}
-Common_markers$`R-D vs Rcl1-Dcl1 Down`$intersections$`R-D ∩ Rcl1-Dcl1` %>% 
-  head(50)
+Common_markers$`R-D vs Rcl1-Dcl1 Down`$intersections$`R-D ∩ Rcl1-Dcl1`
 ```
 
-Specific to clonotype1 (top50)
+Specific to clonotype1 
 
 ```{r}
-Common_markers$`R-D vs Rcl1-Dcl1 Down`$group_specific$`R-D | Rcl1-Dcl1`$`Rcl1-Dcl1` %>% 
-  head(50)
+Common_markers$`R-D vs Rcl1-Dcl1 Down`$group_specific$`R-D | Rcl1-Dcl1`$`Rcl1-Dcl1`
 ```
 
 
@@ -1434,18 +1430,16 @@ Common_markers$`R-D vs Rcl1-Dcl1 Down`$group_specific$`R-D | Rcl1-Dcl1`$`Rcl1-Dc
 Common_markers$`R-IC vs Rcl1-ICcl1 UP`$plot
 ```
 
-The common genes are (top50): 
+The common genes are : 
 
 ```{r}
-Common_markers$`R-IC vs Rcl1-ICcl1 UP`$intersections$`R-IC ∩ Rcl1-ICcl1` %>% 
-  head(50)
+Common_markers$`R-IC vs Rcl1-ICcl1 UP`$intersections$`R-IC ∩ Rcl1-ICcl1`
 ```
 
-Specific to clonotype1 (top50)
+Specific to clonotype1 
 
 ```{r}
-Common_markers$`R-IC vs Rcl1-ICcl1 UP`$group_specific$`R-IC | Rcl1-ICcl1`$`Rcl1-ICcl1` %>% 
-  head(50)
+Common_markers$`R-IC vs Rcl1-ICcl1 UP`$group_specific$`R-IC | Rcl1-ICcl1`$`Rcl1-ICcl1`
 ```
 
 
@@ -1456,18 +1450,16 @@ Common_markers$`R-IC vs Rcl1-ICcl1 UP`$group_specific$`R-IC | Rcl1-ICcl1`$`Rcl1-
 Common_markers$`R-IC vs Rcl1-ICcl1 Down`$plot
 ```
 
-The common genes are (top50): 
+The common genes are : 
 
 ```{r}
-Common_markers$`R-IC vs Rcl1-ICcl1 Down`$intersections$`R-IC ∩ Rcl1-ICcl1` %>% 
-  head(50)
+Common_markers$`R-IC vs Rcl1-ICcl1 Down`$intersections$`R-IC ∩ Rcl1-ICcl1`
 ```
 
-Specific to clonotype1 (top50)
+Specific to clonotype1
 
 ```{r}
-Common_markers$`R-IC vs Rcl1-ICcl1 Down`$group_specific$`R-IC | Rcl1-ICcl1`$`Rcl1-ICcl1` %>% 
-  head(50)
+Common_markers$`R-IC vs Rcl1-ICcl1 Down`$group_specific$`R-IC | Rcl1-ICcl1`$`Rcl1-ICcl1`
 ```
 
 
@@ -1480,18 +1472,16 @@ Common_markers$`R-IC vs Rcl1-ICcl1 Down`$group_specific$`R-IC | Rcl1-ICcl1`$`Rcl
 Common_markers$`IC-D vs ICcl1-Dcl1 UP`$plot
 ```
 
-The common genes are (top50): 
+The common genes are : 
 
 ```{r}
-Common_markers$`IC-D vs ICcl1-Dcl1 UP`$intersections$`IC-D ∩ ICcl1-Dcl1` %>% 
-  head(50)
+Common_markers$`IC-D vs ICcl1-Dcl1 UP`$intersections$`IC-D ∩ ICcl1-Dcl1`
 ```
 
-Specific to clonotype1 (top50)
+Specific to clonotype1 
 
 ```{r}
-Common_markers$`IC-D vs ICcl1-Dcl1 UP`$group_specific$`IC-D | ICcl1-Dcl1`$`ICcl1-Dcl1` %>% 
-  head(50)
+Common_markers$`IC-D vs ICcl1-Dcl1 UP`$group_specific$`IC-D | ICcl1-Dcl1`$`ICcl1-Dcl1`
 ```
 
 
@@ -1502,18 +1492,16 @@ Common_markers$`IC-D vs ICcl1-Dcl1 UP`$group_specific$`IC-D | ICcl1-Dcl1`$`ICcl1
 Common_markers$`IC-D vs ICcl1-Dcl1 Down`$plot
 ```
 
-The common genes are (top50): 
+The common genes are : 
 
 ```{r}
-Common_markers$`IC-D vs ICcl1-Dcl1 Down`$intersections$`IC-D ∩ ICcl1-Dcl1` %>% 
-  head(50)
+Common_markers$`IC-D vs ICcl1-Dcl1 Down`$intersections$`IC-D ∩ ICcl1-Dcl1`
 ```
 
-Specific to clonotype1 (top50)
+Specific to clonotype1 
 
 ```{r}
-Common_markers$`IC-D vs ICcl1-Dcl1 Down`$group_specific$`IC-D | ICcl1-Dcl1`$`ICcl1-Dcl1` %>% 
-  head(50)
+Common_markers$`IC-D vs ICcl1-Dcl1 Down`$group_specific$`IC-D | ICcl1-Dcl1`$`ICcl1-Dcl1`
 ```
 
 
@@ -1535,10 +1523,10 @@ __We have 286 up regulated genes from D to R. __
 Common_markers$`R-D vs R-IC vs IC-D UP`$intersections$`R-D ∩ IC-D`
 ```
 
--   We have 106 genes in common with those up regulated from IC to R (here's the top50).
+-   We have 106 genes in common with those up regulated from IC to R.
 
 ```{r}
-Common_markers$`R-D vs R-IC vs IC-D UP`$intersections$`R-D ∩ R-IC` %>% head(50)
+Common_markers$`R-D vs R-IC vs IC-D UP`$intersections$`R-D ∩ R-IC`
 ```
 
 -   We have 3 common genes between all the stages
@@ -1561,16 +1549,16 @@ Common_markers$`R-D vs R-IC vs IC-D Down`$plot
 
 __We have 718 down regulated genes from D to R. __
 
--   We have 78 genes in common with those down regulated from D to IC (here's the top50).
+-   We have 78 genes in common with those down regulated from D to IC.
 
 ```{r}
-Common_markers$`R-D vs R-IC vs IC-D Down`$intersections$`R-D ∩ IC-D` %>% head(50)
+Common_markers$`R-D vs R-IC vs IC-D Down`$intersections$`R-D ∩ IC-D`
 ```
 
--   We have 118 genes in common with those down regulated from IC to R (here's the top50).
+-   We have 118 genes in common with those down regulated from IC to R 
 
 ```{r}
-Common_markers$`R-D vs R-IC vs IC-D Down`$intersections$`R-D ∩ R-IC` %>% head(50)
+Common_markers$`R-D vs R-IC vs IC-D Down`$intersections$`R-D ∩ R-IC`
 ```
 
 -   We have 2 common genes between all the stages
@@ -1628,13 +1616,13 @@ __We have 439 down regulated genes from D to R. __
 -   We have 39 genes in common with those down regulated from D to IC.
 
 ```{r}
-Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 Down`$intersections$`Rcl1-Dcl1 ∩ ICcl1-Dcl1` %>% head(50)
+Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 Down`$intersections$`Rcl1-Dcl1 ∩ ICcl1-Dcl1`
 ```
 
--   We have 61 genes in common with those down regulated from IC to R (here's the top50).
+-   We have 61 genes in common with those down regulated from IC to R.
 
 ```{r}
-Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 Down`$intersections$`Rcl1-Dcl1 ∩ Rcl1-ICcl1` %>% head(50)
+Common_markers$`Rcl1-Dcl1 vs Rcl1-ICcl1 vs ICcl1-Dcl1 Down`$intersections$`Rcl1-Dcl1 ∩ Rcl1-ICcl1`
 ```
 
 -   We have 1 common gene between all the stages
